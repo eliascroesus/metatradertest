@@ -5,10 +5,26 @@ small helper scripts for honest backtesting.
 
 | File | What it is |
 |---|---|
-| `MQL5/Experts/GoldBreakoutEA.mq5` | The robot itself |
+| `MQL5/Experts/GoldBreakoutEA.mq5` | The original robot: few, slow trend trades |
+| `MQL5/Experts/GoldScalperFVG.mq5` | The scalper: many small trades on fair value gaps (see below) |
 | `MQL5/Scripts/GoldBreakout_ExportNews.mq5` | Helper: saves past high-impact USD news times to a file, because MetaTrader's news calendar does not work inside the Strategy Tester |
 | `MQL5/Scripts/GoldBreakout_SpreadTestSymbol.mq5` | Helper: makes a copy of gold with double the spread, for the "double spread" stress test |
 | `tools/simulator/` | For programmers only: the automated checks used to test the robot's logic. Not needed in MetaTrader. |
+
+---
+
+## GoldScalperFVG (the scalper)
+
+* **Direction:** EMA 50 vs EMA 200 on the 15-minute chart (finished candles). Fast above slow = buys only, below = sells only.
+* **Entries:** fair value gaps on the 1-minute chart: three finished candles where the 1st and 3rd don't overlap
+  (gap of at least `MinGapUSD`). When the price comes back into a gap that points with the trend, it opens a trade.
+  Each gap is used once and is forgotten after `GapExpiryCandles` candles or when a candle closes through it.
+* **Size and number:** 0.01 lots per trade, up to 4 open at once, at most one new trade per 1-minute candle.
+* **Exits:** take-profit at +10% and stop-loss at -20% of each trade's margin, placed with the broker at once.
+  With gold near $4,000 and 1:100 leverage that is about +$4 / -$8. Higher leverage makes these distances smaller.
+* **Safety:** same daily loss limit, kill switch, spread filter, news filter and CSV log as the original robot.
+* Needs a **hedging** account. Because the stop is twice as far as the target, it has to win about 2 out of 3 trades
+  (plus the spread) just to break even, so test it before trusting it.
 
 ---
 

@@ -15,7 +15,7 @@ pass() { echo "  ok    $1"; }
 fail() { echo "  FAIL  $1"; failures=$((failures + 1)); }
 
 echo "1) Syntax check"
-for f in Experts/GoldBreakoutEA Scripts/GoldBreakout_ExportNews Scripts/GoldBreakout_SpreadTestSymbol; do
+for f in Experts/GoldBreakoutEA Experts/GoldScalperFVG Scripts/GoldBreakout_ExportNews Scripts/GoldBreakout_SpreadTestSymbol; do
   python3 mq5_to_cpp.py $REPO/MQL5/$f.mq5 > $B/check.cpp &&
     g++ -std=c++17 -fsyntax-only -Wall -Wextra -Wno-unused-parameter -I. $B/check.cpp && pass "$f" || fail "$f"
 done
@@ -53,7 +53,23 @@ scenario "break-even +0.10, trailing step 0" 3 365 --set BreakEvenExtraUSD=0.10 
 scenario "smallest lot too risky"            1 120 --set RiskPercentPerTrade=0.05 --set MaxRiskPercentAtMinLot=0.1
 scenario "ResetKillSwitch = true"            1 60  --set ResetKillSwitch=true
 
-echo "3) Helper scripts"
+echo "3) GoldScalperFVG on a simulated market"
+python3 mq5_to_cpp.py $REPO/MQL5/Experts/GoldScalperFVG.mq5 --header mql5_sim.h > $B/scalp_sim.inc &&
+  g++ -std=c++17 -O2 -I. -I$B -o $B/scalp scalp_main.cpp || fail "scalper (build)"
+for s in 1 2 3 4 5; do
+  r=$(cd $B && rm -f simout_* && ./scalp $s 60); [ $? -eq 0 ] && pass "scalper, market seed $s | ${r%% | balance*}" || { fail "scalper seed $s"; echo "$r" | grep -m5 "CHECK FAILED"; }
+done
+scalp_set() {  # scalp_set <label> <seed> --set X=Y ...
+  local label=$1 seed=$2; shift 2
+  python3 mq5_to_cpp.py $REPO/MQL5/Experts/GoldScalperFVG.mq5 --header mql5_sim.h "$@" > $B/scalp_sim.inc &&
+    g++ -std=c++17 -O2 -I. -I$B -o $B/scalp2 scalp_main.cpp || { fail "$label (build)"; return; }
+  r=$(cd $B && rm -f simout_* && ./scalp2 $seed 60); [ $? -eq 0 ] && pass "scalper, $label | ${r%% | balance*}" || { fail "scalper $label"; echo "$r" | grep -m5 "CHECK FAILED"; }
+}
+scalp_set "max 2 trades, 5-min gaps" 2 --set MaxOpenTrades=2 --set SignalTimeframe=PERIOD_M5
+scalp_set "daily loss limit 0.3%" 3 --set DailyLossLimitPercent=0.3
+scalp_set "tight spread filter" 4 --set MaxSpreadUSD=0.24
+
+echo "4) Helper scripts"
 python3 mq5_to_cpp.py $REPO/MQL5/Scripts/GoldBreakout_ExportNews.mq5 --header mql5_sim.h > $B/news_sim.inc &&
   g++ -std=c++17 -O1 -I. -I$B -o $B/news_test news_main.cpp || fail "news script (build)"
 for clock in ny7 gmt0 eu; do for cal in uniform seasonal; do for month in 1 3 6 11; do

@@ -83,6 +83,7 @@ enum ENUM_SYMBOL_INFO_STRING { SYMBOL_BASIS, SYMBOL_CURRENCY_BASE, SYMBOL_CURREN
 enum ENUM_SYMBOL_TRADE_MODE { SYMBOL_TRADE_MODE_DISABLED, SYMBOL_TRADE_MODE_LONGONLY, SYMBOL_TRADE_MODE_SHORTONLY, SYMBOL_TRADE_MODE_CLOSEONLY, SYMBOL_TRADE_MODE_FULL };
 enum ENUM_ACCOUNT_INFO_DOUBLE { ACCOUNT_BALANCE, ACCOUNT_CREDIT, ACCOUNT_PROFIT, ACCOUNT_EQUITY, ACCOUNT_MARGIN, ACCOUNT_MARGIN_FREE, ACCOUNT_MARGIN_LEVEL };
 enum ENUM_ACCOUNT_INFO_INTEGER { ACCOUNT_LOGIN, ACCOUNT_TRADE_MODE, ACCOUNT_LEVERAGE, ACCOUNT_MARGIN_MODE, ACCOUNT_TRADE_ALLOWED, ACCOUNT_TRADE_EXPERT };
+enum ENUM_ACCOUNT_MARGIN_MODE { ACCOUNT_MARGIN_MODE_RETAIL_NETTING, ACCOUNT_MARGIN_MODE_EXCHANGE, ACCOUNT_MARGIN_MODE_RETAIL_HEDGING };
 enum ENUM_ACCOUNT_INFO_STRING { ACCOUNT_NAME, ACCOUNT_SERVER, ACCOUNT_CURRENCY, ACCOUNT_COMPANY };
 enum ENUM_TERMINAL_INFO_INTEGER { TERMINAL_BUILD, TERMINAL_CONNECTED, TERMINAL_TRADE_ALLOWED };
 enum ENUM_TERMINAL_INFO_STRING { TERMINAL_LANGUAGE, TERMINAL_COMPANY, TERMINAL_NAME, TERMINAL_PATH, TERMINAL_DATA_PATH, TERMINAL_COMMONDATA_PATH };
@@ -197,8 +198,8 @@ namespace sim {
   struct Bar { datetime t; double o, h, l, c; };
   struct Series { int secs; std::vector<Bar> bars; };
   std::map<int, Series> series;
-  int tfSeconds(int tf) { switch(tf) { case PERIOD_M1: return 60; case PERIOD_H1: return 3600; case PERIOD_H4: return 14400; case PERIOD_D1: return 86400; default: return 3600; } }
-  void initSeries() { series.clear(); int tfs[] = {PERIOD_H1, PERIOD_H4, PERIOD_D1}; for(int tf : tfs) { series[tf].secs = tfSeconds(tf); } }
+  int tfSeconds(int tf) { switch(tf) { case PERIOD_M1: return 60; case PERIOD_M5: return 300; case PERIOD_M15: return 900; case PERIOD_H1: return 3600; case PERIOD_H4: return 14400; case PERIOD_D1: return 86400; default: return 3600; } }
+  void initSeries() { series.clear(); int tfs[] = {PERIOD_M1, PERIOD_M5, PERIOD_M15, PERIOD_H1, PERIOD_H4, PERIOD_D1}; for(int tf : tfs) { series[tf].secs = tfSeconds(tf); } }
   void updateSeries(const Tick& k) {
     for(auto& kv : series) { Series& s = kv.second; datetime bt = k.t - k.t % s.secs;
       if(s.bars.empty() || s.bars.back().t != bt) s.bars.push_back({bt, k.bid, k.bid, k.bid, k.bid});
@@ -208,7 +209,13 @@ namespace sim {
 
   struct Ind { int kind; int tf; int period; };   // kind 0 = EMA, 1 = ATR
   std::vector<Ind> inds;
-  double emaAt(const Series& s, int period, int idx) { double a = 2.0 / (period + 1.0); double e = s.bars[0].c; for(int i = 1; i <= idx; i++) e = a * s.bars[i].c + (1 - a) * e; return e; }
+  std::map<std::pair<const void*, int>, std::vector<double>> emaCache;   // finished bars only
+  double emaAt(const Series& s, int period, int idx) {
+    double a = 2.0 / (period + 1.0); auto& v = emaCache[{(const void*)&s, period}];
+    int finished = (int)s.bars.size() - 1;
+    while((int)v.size() < std::min(idx + 1, finished)) { int i = (int)v.size(); v.push_back(i == 0 ? s.bars[0].c : a * s.bars[i].c + (1 - a) * v[i - 1]); }
+    if(idx < (int)v.size()) return v[idx];
+    return idx == 0 ? s.bars[0].c : a * s.bars[idx].c + (1 - a) * v[idx - 1]; }
   double atrAt(const Series& s, int period, int idx) { if(idx < period) return EMPTY_VALUE; double sum = 0; for(int i = idx - period + 1; i <= idx; i++) { const Bar& b = s.bars[i]; double pc = s.bars[i-1].c; sum += std::max(b.h - b.l, std::max(std::fabs(b.h - pc), std::fabs(b.l - pc))); } return sum / period; }
 
   struct Pos { ulong ticket; long id; int type; double volume, open, sl, tp; datetime time; long magic; std::string comment; };
@@ -239,7 +246,10 @@ namespace sim {
   }
   bool checkStops() { bool any = false; for(size_t i = 0; i < positions.size();) { Pos& p = positions[i];
       bool hit = p.sl > 0 && ((p.type == POSITION_TYPE_BUY && now.bid <= p.sl) || (p.type == POSITION_TYPE_SELL && now.ask >= p.sl));
-      if(hit) { char c[64]; snprintf(c, sizeof c, "[sl %.2f]", p.sl); closePosition(i, DEAL_REASON_SL, c); any = true; } else i++; } return any; }
+      bool tpHit = !hit && p.tp > 0 && ((p.type == POSITION_TYPE_BUY && now.bid >= p.tp) || (p.type == POSITION_TYPE_SELL && now.ask <= p.tp));
+      if(hit) { char c[64]; snprintf(c, sizeof c, "[sl %.2f]", p.sl); closePosition(i, DEAL_REASON_SL, c); any = true; }
+      else if(tpHit) { char c[64]; snprintf(c, sizeof c, "[tp %.2f]", p.tp); closePosition(i, DEAL_REASON_TP, c); any = true; } else i++; } return any; }
+  bool tpValid(int type, double tp) { double lvl = stopsLevelPoints * point; if(tp <= 0) return true; return type == POSITION_TYPE_BUY ? (tp > now.bid + lvl + 1e-9) : (tp < now.ask - lvl - 1e-9); }
   Pos* findPos(ulong ticket) { for(auto& p : positions) if(p.ticket == ticket) return &p; return nullptr; }
   bool stopValid(int type, double sl) { double lvl = stopsLevelPoints * point; if(sl <= 0) return true; return type == POSITION_TYPE_BUY ? (sl < now.bid - lvl - 1e-9) : (sl > now.ask + lvl + 1e-9); }
 }
@@ -255,6 +265,7 @@ inline void ResetLastError() { sim::lastError = 0; }
 inline int MQLInfoInteger(ENUM_MQL_INFO_INTEGER p) { if(p == MQL_TESTER) return sim::isTester ? 1 : 0; if(p == MQL_TRADE_ALLOWED) return sim::tradeAllowed ? 1 : 0; return 0; }
 inline int TerminalInfoInteger(ENUM_TERMINAL_INFO_INTEGER p) { return p == TERMINAL_TRADE_ALLOWED ? (sim::tradeAllowed ? 1 : 0) : 0; }
 inline string TerminalInfoString(ENUM_TERMINAL_INFO_STRING p) { return p == TERMINAL_COMMONDATA_PATH ? string("C:\\Common") : string("C:\\Sim"); }
+inline long AccountInfoInteger(ENUM_ACCOUNT_INFO_INTEGER p) { return p == ACCOUNT_MARGIN_MODE ? (long)ACCOUNT_MARGIN_MODE_RETAIL_HEDGING : 0; }
 inline double AccountInfoDouble(ENUM_ACCOUNT_INFO_DOUBLE p) { if(p == ACCOUNT_BALANCE) return sim::balance; if(p == ACCOUNT_EQUITY) return sim::equity(); if(p == ACCOUNT_MARGIN_FREE) return sim::equity() - sim::usedMargin(); return 0; }
 inline string AccountInfoString(ENUM_ACCOUNT_INFO_STRING p) { return p == ACCOUNT_SERVER ? string("SimBroker-Server") : string("USD"); }
 inline double SymbolInfoDouble(const string sym, ENUM_SYMBOL_INFO_DOUBLE p) { (void)sym;
@@ -267,6 +278,8 @@ namespace sim { std::map<std::string, bool>& customList(); }
 inline bool SymbolExist(const string s, bool& c) { c = sim::customList().count(s.s) > 0; return c || s.s == sim::symbolName; }
 
 inline datetime iTime(const string, ENUM_TIMEFRAMES tf, int shift) { auto& b = sim::S(tf).bars; int i = (int)b.size() - 1 - shift; return i < 0 ? 0 : b[i].t; }
+inline double iHigh(const string, ENUM_TIMEFRAMES tf, int shift) { auto& b = sim::S(tf).bars; int i = (int)b.size() - 1 - shift; return i < 0 ? 0 : b[i].h; }
+inline double iLow(const string, ENUM_TIMEFRAMES tf, int shift) { auto& b = sim::S(tf).bars; int i = (int)b.size() - 1 - shift; return i < 0 ? 0 : b[i].l; }
 inline double iClose(const string, ENUM_TIMEFRAMES tf, int shift) { auto& b = sim::S(tf).bars; int i = (int)b.size() - 1 - shift; return i < 0 ? 0 : b[i].c; }
 inline int CopyHigh(const string, ENUM_TIMEFRAMES tf, int start, int count, MqlArray<double>& a) { auto& b = sim::S(tf).bars; int last = (int)b.size() - 1 - start; if(last < 0) return -1; int first = std::max(0, last - count + 1); a.v.clear(); for(int i = first; i <= last; i++) a.v.push_back(b[i].h); return (int)a.v.size(); }
 inline int CopyLow(const string, ENUM_TIMEFRAMES tf, int start, int count, MqlArray<double>& a) { auto& b = sim::S(tf).bars; int last = (int)b.size() - 1 - start; if(last < 0) return -1; int first = std::max(0, last - count + 1); a.v.clear(); for(int i = first; i <= last; i++) a.v.push_back(b[i].l); return (int)a.v.size(); }
@@ -323,6 +336,7 @@ inline ulong FileSize(int h) { return sim::files[sim::handles[h].key].content.si
 inline bool FileIsExist(const string name, int common = 0) { return sim::files.count(fileKey(name, common)) > 0; }
 
 inline bool CalendarValueHistory(MqlArray<MqlCalendarValue>& v, datetime from, datetime to = 0, const string = NULL, const string = NULL) { v.v.clear(); for(auto& x : sim::calValues) if(x.time >= from && (to == 0 || x.time <= to)) v.v.push_back(x); return true; }
+inline bool CalendarValueHistoryByEvent(ulong id, MqlArray<MqlCalendarValue>& v, datetime from, datetime to = 0) { v.v.clear(); for(auto& x : sim::calValues) if(x.event_id == id && x.time >= from && (to == 0 || x.time <= to)) v.v.push_back(x); return true; }
 inline bool CalendarEventById(ulong id, MqlCalendarEvent& e) { for(auto& x : sim::calEvents) if(x.id == id) { e = x; return true; } return false; }
 
 
@@ -359,7 +373,7 @@ class CTrade {
   ulong m_magic = 0; uint m_ret = 0; ulong m_order = 0;
   bool open(int type, double vol, double sl, double tp, const string& comment) {
     if(vol < 0.01 - 1e-9 || std::fabs(vol / 0.01 - std::round(vol / 0.01)) > 1e-6) { m_ret = 10014; return false; }
-    if(!sim::stopValid(type, sl)) { m_ret = TRADE_RETCODE_INVALID_STOPS; return false; }
+    if(!sim::stopValid(type, sl) || !sim::tpValid(type, tp)) { m_ret = TRADE_RETCODE_INVALID_STOPS; return false; }
     double price = type == POSITION_TYPE_BUY ? sim::now.ask : sim::now.bid;
     sim::Pos p{sim::nextTicket++, 0, type, vol, price, sl, tp, sim::now.t, (long)m_magic, comment.s}; p.id = (long)p.ticket;
     double comm = -sim::commissionPerLotSide * vol;

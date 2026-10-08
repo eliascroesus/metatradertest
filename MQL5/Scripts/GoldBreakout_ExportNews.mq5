@@ -351,50 +351,54 @@ void OnStart()
          nfpId = events[i].id;
    }
 
-   // 2. Every release of those events between FromDate and ToDate.
-   MqlCalendarValue values[];
-   ResetLastError();
-   if(!CalendarValueHistory(values, FromDate, ToDate, NULL, Currency) && GetLastError() != 0)
-   {
-      Alert("GoldBreakout_ExportNews: could not read the calendar history (error ", GetLastError(), ").");
-      return;
-   }
+   // 2. Every release of those events between FromDate and ToDate, asked
+   //    event by event. A brand-new MetaTrader may still be downloading the
+   //    calendar, so each request is retried for a little while.
    datetime times[];
    string   names[];
    datetime nfpTimes[];
    datetime now = TimeTradeServer();
-   for(int i = 0; i < ArraySize(values); i++)
+   int      failedEvents = 0;
+   for(int k = 0; k < ArraySize(highIds); k++)
    {
-      int k = -1;
-      for(int j = 0; j < ArraySize(highIds); j++)
+      MqlCalendarValue values[];
+      bool ok = false;
+      for(int attempt = 0; attempt < 3 && !ok; attempt++)
       {
-         if(highIds[j] == values[i].event_id)
-         {
-            k = j;
-            break;
-         }
+         ResetLastError();
+         ok = CalendarValueHistoryByEvent(highIds[k], values, FromDate, ToDate) && ArraySize(values) > 0;
+         if(!ok)
+            Sleep(1000);                     // calendar still downloading: wait and ask again
       }
-      if(k < 0)
-         continue;
-      int n = ArraySize(times);
-      ArrayResize(times, n + 1, 1024);
-      ArrayResize(names, n + 1, 1024);
-      times[n] = values[i].time;
-      names[n] = CleanName(highNames[k]);
-      if(values[i].event_id == nfpId && values[i].time < now)
+      if(!ok)
       {
-         int m = ArraySize(nfpTimes);
-         ArrayResize(nfpTimes, m + 1, 128);
-         nfpTimes[m] = values[i].time;
+         failedEvents++;
+         continue;
+      }
+      for(int i = 0; i < ArraySize(values); i++)
+      {
+         int n = ArraySize(times);
+         ArrayResize(times, n + 1, 1024);
+         ArrayResize(names, n + 1, 1024);
+         times[n] = values[i].time;
+         names[n] = CleanName(highNames[k]);
+         if(highIds[k] == nfpId && values[i].time < now)
+         {
+            int m = ArraySize(nfpTimes);
+            ArrayResize(nfpTimes, m + 1, 128);
+            nfpTimes[m] = values[i].time;
+         }
       }
    }
    int total = ArraySize(times);
    if(total == 0)
    {
-      Alert("GoldBreakout_ExportNews: no high-impact ", Currency, " events found between ", TimeToString(FromDate, TIME_DATE),
-            " and ", TimeToString(ToDate, TIME_DATE), ".");
+      Alert("GoldBreakout_ExportNews: MetaTrader has not downloaded the calendar history yet. Click View > Toolbox, "
+            "open the Calendar tab, wait 2 minutes, then run this script again.");
       return;
    }
+   if(failedEvents > 0)
+      Print("Note: ", failedEvents, " high-impact events had no history yet; run the script again later for a complete list.");
 
    // 3. Summer-time correction.
    string explanation = "";
