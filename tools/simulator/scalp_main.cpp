@@ -37,15 +37,40 @@ void generateTicks(unsigned seed, datetime start, int days, double price0) {
 }
 
 // ---- independent rules
-struct OGap { int dir; double low, high; datetime made; bool used; };
+struct OGap { int dir; double low, high; datetime made; bool used; int entries; };
 std::vector<OGap> ogaps;
 int oTrend = 0;
 
+// independent market-structure reading: swings with SwingStrength candles each side, close beyond = break
+int structureNow(int tf, double& lo, double& hi) {
+  auto& b = sim::S(tf).bars; int m = (int)b.size() - 1;      // finished candles: 0..m-1
+  lo = hi = 0; if(m < StructureLookback) return 0;
+  int first = m - StructureLookback, dir = 0; double sh = 0, sl = 0; bool hOpen = false, lOpen = false;
+  for(int i = first; i < m; i++) {
+    int j = i - SwingStrength;
+    if(j - SwingStrength >= first) {
+      bool isH = true, isL = true;
+      for(int k = j - SwingStrength; k <= j + SwingStrength; k++) { if(k == j) continue; if(b[k].h >= b[j].h) isH = false; if(b[k].l <= b[j].l) isL = false; }
+      if(isH) { sh = b[j].h; hOpen = true; }
+      if(isL) { sl = b[j].l; lOpen = true; }
+    }
+    if(hOpen && b[i].c > sh) { dir = 1; hOpen = false; }
+    if(lOpen && b[i].c < sl) { dir = -1; lOpen = false; }
+  }
+  lo = sl; hi = sh; return dir;
+}
+double oRangeLo = 0, oRangeHi = 0;
+bool inHours(datetime t) { // trading hours, written independently
+  if(TradingHourStart == TradingHourEnd || (TradingHourStart == 0 && TradingHourEnd == 24)) return true;
+  int h = (int)((t % 86400) / 3600);
+  return TradingHourStart < TradingHourEnd ? (h >= TradingHourStart && h < TradingHourEnd) : (h >= TradingHourStart || h < TradingHourEnd); }
 int trendNow() {
-  auto& s = sim::S(TrendTimeframe); int m = (int)s.bars.size();
-  if(m < 3) return 0;
-  double f = sim::emaAt(s, TrendFastEMA, m - 2), sl = sim::emaAt(s, TrendSlowEMA, m - 2);
-  return f > sl ? 1 : (f < sl ? -1 : 0);
+  double lo, hi;
+  int h = structureNow(HigherTimeframe, lo, hi), m = structureNow(MiddleTimeframe, oRangeLo, oRangeHi);
+  int e = 0; auto& s = sim::S(TrendTimeframe); int n = (int)s.bars.size();
+  if(n >= 3) { double f = sim::emaAt(s, TrendFastEMA, n - 2), sl = sim::emaAt(s, TrendSlowEMA, n - 2); e = f > sl ? 1 : (f < sl ? -1 : 0); }
+  int bias = h; if(m != bias) bias = 0; if(UseEMAFilter && e != bias) bias = 0;
+  return bias;
 }
 void oracleNewCandle() {
   oTrend = trendNow();
@@ -58,8 +83,8 @@ void oracleNewCandle() {
     bool old = (c1.t - g.made) >= (long)GapExpiryCandles * PeriodSeconds(SignalTimeframe);
     if(g.used || broken || old || g.dir != oTrend) ogaps.erase(ogaps.begin() + i);
   }
-  if(oTrend > 0 && c1.l > c3.h && c1.l - c3.h >= MinGapUSD) ogaps.push_back({1, c3.h, c1.l, c1.t, false});
-  if(oTrend < 0 && c3.l > c1.h && c3.l - c1.h >= MinGapUSD) ogaps.push_back({-1, c1.h, c3.l, c1.t, false});
+  if(oTrend > 0 && c1.l > c3.h && c1.l - c3.h >= MinGapUSD) ogaps.push_back({1, c3.h, c1.l, c1.t, false, 0});
+  if(oTrend < 0 && c3.l > c1.h && c3.l - c1.h >= MinGapUSD) ogaps.push_back({-1, c1.h, c3.l, c1.t, false, 0});
   if(ogaps.size() > MAX_GAPS) ogaps.erase(ogaps.begin());
 }
 int pickGap(double bid) {
@@ -100,17 +125,23 @@ int main(int argc, char** argv) {
     sim::now = sim::ticks[k]; sim::updateSeries(sim::now);
     sim::checkStops();
     datetime candle = iTime(_Symbol, SignalTimeframe, 0);
-    if(candle != lastCandle) { lastCandle = candle; oracleNewCandle(); }
+    bool newCandle = candle != lastCandle;
+    if(newCandle) { lastCandle = candle; oracleNewCandle(); }
     oracleSafety();
     int openBefore = (int)sim::positions.size();
     double spread = sim::now.ask - sim::now.bid;
     int pick = pickGap(sim::now.bid);
-    bool shouldEnter = pick >= 0 && openBefore < MaxOpenTrades && !enteredCandles.count(candle) && !oDayHit && !oKill &&
-                       !(MaxSpreadUSD > 0 && spread > MaxSpreadUSD + 1e-9);
+    if(pick >= 0 && UsePremiumDiscount && oRangeHi > oRangeLo) { double mid = (oRangeHi + oRangeLo) / 2; if((oTrend > 0 && sim::now.bid > mid) || (oTrend < 0 && sim::now.bid < mid)) pick = -1; }
+    int againstBefore = 0; if(newCandle && CloseOnTrendChange && oTrend != 0) for(auto& p : sim::positions) if((p.type == POSITION_TYPE_BUY ? 1 : -1) == -oTrend) againstBefore++;
+    int openAfterFlip = (int)sim::positions.size() - againstBefore;
+    (void)openBefore;
+    bool shouldEnter = pick >= 0 && openAfterFlip < MaxOpenTrades && !enteredCandles.count(candle) && !oDayHit && !oKill &&
+                       !(MaxSpreadUSD > 0 && spread > MaxSpreadUSD + 1e-9) && inHours(sim::now.t);
     OnTick();
     if(!sim::closeEvents.empty()) OnTrade();
     if(oKill != g_killSwitchOn) oracle::fail("kill switch state differs from the rule at " + oracle::ts(sim::now.t));
     if(oKill && !sim::positions.empty()) oracle::fail("kill switch on but trades still open at " + oracle::ts(sim::now.t));
+    if(newCandle && CloseOnTrendChange && oTrend != 0) for(auto& p : sim::positions) if((p.type == POSITION_TYPE_BUY ? 1 : -1) == -oTrend) oracle::fail("trade against the new direction left open at " + oracle::ts(sim::now.t));
     if(!g_killSwitchOn && g_trendDir != oTrend) oracle::fail("trend differs from the rule at " + oracle::ts(sim::now.t));
     int newOnes = 0;
     for(auto& p : sim::positions) {
@@ -119,7 +150,7 @@ int main(int argc, char** argv) {
       int dir = p.type == POSITION_TYPE_BUY ? 1 : -1; (dir > 0 ? buys : sells)++;
       if(!shouldEnter) oracle::fail("trade opened although the rules say no entry at " + oracle::ts(sim::now.t));
       if(dir != oTrend) oracle::fail("trade against the trend at " + oracle::ts(sim::now.t));
-      if(pick >= 0) ogaps[pick].used = true;
+      if(pick >= 0 && ++ogaps[pick].entries >= EntriesPerGap) ogaps[pick].used = true;
       enteredCandles.insert(candle);
       double margin = p.volume * sim::contract * p.open / sim::leverage, perPrice = p.volume * sim::contract;
       double wantTp = TakeProfitPercentOfMargin / 100.0 * margin / perPrice, wantSl = StopLossPercentOfMargin / 100.0 * margin / perPrice;
@@ -132,7 +163,7 @@ int main(int argc, char** argv) {
     if((int)sim::positions.size() > MaxOpenTrades) oracle::fail("more than MaxOpenTrades open at " + oracle::ts(sim::now.t));
     maxOpenSeen = std::max(maxOpenSeen, (int)sim::positions.size());
     for(auto& c : sim::closeEvents) {
-      std::string r = c.reason == DEAL_REASON_TP ? "take-profit" : (c.reason == DEAL_REASON_SL ? "stop-loss" : (oKill ? "kill switch" : "closed by EA"));
+      std::string r = c.reason == DEAL_REASON_TP ? "take-profit" : (c.reason == DEAL_REASON_SL ? "stop-loss" : (oKill ? "kill switch" : "trend changed"));
       expected[c.posId] = r;
     }
     sim::closeEvents.clear();

@@ -26,13 +26,33 @@ def strip_comments(text):
     return ''.join(out)
 
 def wrap_literals(text):
-    # merge adjacent literals ("a" "b" -> "ab"), then wrap each literal as string("...")
-    lit = r'"(?:[^"\\\n]|\\.)*"'
-    prev = None
-    while prev != text:
-        prev = text
-        text = re.sub(r'(' + lit + r')\s+(' + lit + r')', lambda m: m.group(1)[:-1] + m.group(2)[1:], text)
-    return re.sub(lit, lambda m: 'string(' + m.group(0) + ')', text)
+    # walk the code once: merge adjacent literals ("a" "b" -> "ab") and wrap each as string("...")
+    out, i, n = [], 0, len(text)
+    while i < n:
+        c = text[i]
+        if c == "'":
+            j = i + 1
+            while j < n and text[j] != "'":
+                j += 2 if text[j] == '\\' else 1
+            out.append(text[i:j+1]); i = j + 1
+        elif c == '"':
+            parts = []
+            while True:
+                j = i + 1
+                while j < n and text[j] != '"':
+                    j += 2 if text[j] == '\\' else 1
+                parts.append(text[i+1:j]); i = j + 1
+                k = i
+                while k < n and text[k] in ' \t\r\n':
+                    k += 1
+                if k < n and text[k] == '"':
+                    i = k
+                    continue
+                break
+            out.append('string("' + ''.join(parts) + '")')
+        else:
+            out.append(c); i += 1
+    return ''.join(out)
 
 args = sys.argv[1:]
 header = 'mql5_mock.h'

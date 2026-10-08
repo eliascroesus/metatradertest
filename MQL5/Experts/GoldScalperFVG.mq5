@@ -11,17 +11,22 @@
 //
 //  WHAT THE ROBOT DOES
 //  -------------------
-//  1. DIRECTION: on the 15-minute chart it compares two moving averages,
-//     EMA 50 and EMA 200, on finished candles. Fast above slow means gold
-//     is going up, so it only BUYS. Fast below slow means it is going
-//     down, so it only SELLS.
+//  1. DIRECTION (market structure, the way smart-money traders such as
+//     TJR read the chart): on the 1-hour AND the 15-minute chart it finds
+//     the swing highs and swing lows. When a candle CLOSES above the last
+//     swing high, structure is bullish ("break of structure" up); when one
+//     closes below the last swing low, it is bearish. The robot only BUYS
+//     when both charts are bullish and only SELLS when both are bearish.
+//     As an extra check, EMA 50 must also be on the right side of EMA 200
+//     on the 15-minute chart. If the charts disagree, it waits.
+//     If the structure flips against open trades, it closes them.
 //  2. ENTRIES (fair value gaps): on the 1-minute chart it looks at every
 //     three finished candles in a row. If the price moved so fast that the
 //     1st and the 3rd candle do not overlap, the empty space between them
 //     is a "fair value gap" (FVG). Only gaps that point the same way as
 //     the trend are kept. When the price comes back into such a gap, the
-//     robot opens a trade. Each gap is used once and is forgotten after 30
-//     minutes, or as soon as a candle closes right through it.
+//     robot opens a trade (up to 2 trades per gap). A gap is forgotten
+//     after 30 minutes, or as soon as a candle closes right through it.
 //  3. MANY SMALL TRADES: each trade is 0.01 lots. Up to 4 trades can be
 //     open at the same time, and at most one new trade starts per
 //     1-minute candle.
@@ -41,8 +46,8 @@
 //  trades at once. Demo accounts opened with "Use hedge in trading"
 //  ticked are hedging accounts.
 //+------------------------------------------------------------------+
-#property version     "1.00"
-#property description "Gold scalper: 1-minute fair value gaps in the direction of the 15-minute trend."
+#property version     "2.00"
+#property description "Gold scalper: 1-minute fair value gaps in the direction of 1-hour + 15-minute market structure."
 #property description "Up to 4 trades of 0.01 lots, take-profit +10% / stop-loss -20% of margin."
 #property description "Daily loss limit, equity kill switch, spread and news filters, CSV trade log."
 
@@ -61,13 +66,30 @@ input group "=== 1. Symbol ==="
 // whose name STARTS with it (e.g. XAUUSDm) is accepted too.
 input string TradeSymbol = "XAUUSD";
 
-input group "=== 2. Direction of the market (trend) ==="
-// Chart used to decide the direction (default: 15 minutes).
+input group "=== 2. Direction of the market (market structure) ==="
+// The two charts whose structure must agree (default 1 hour and 15 minutes).
+input ENUM_TIMEFRAMES HigherTimeframe = PERIOD_H1;
+input ENUM_TIMEFRAMES MiddleTimeframe = PERIOD_M15;
+// A swing high is a candle with this many lower highs on EACH side (a swing
+// low: this many higher lows on each side). Bigger = only major swings.
+input int SwingStrength = 3;
+// How many finished candles back the structure is read.
+input int StructureLookback = 300;
+// Extra check: fast EMA must be above the slow EMA for buys (below for sells).
+input bool UseEMAFilter = true;
 input ENUM_TIMEFRAMES TrendTimeframe = PERIOD_M15;
-// Fast and slow EMA on that chart. Fast above slow = buys only,
-// fast below slow = sells only.
 input int TrendFastEMA = 50;
 input int TrendSlowEMA = 200;
+// Premium/discount: buy only in the lower half of the current 15-minute
+// swing range ("discount"), sell only in the upper half ("premium").
+// Fewer but better-placed trades. false = off.
+input bool UsePremiumDiscount = false;
+// Close open trades as soon as the direction flips against them.
+input bool CloseOnTrendChange = true;
+// Trade only between these server hours (0 and 24 = all day). Example for
+// the New York session at a GMT+3 broker: 15 and 19.
+input int TradingHourStart = 0;
+input int TradingHourEnd = 24;
 
 input group "=== 3. Entries (fair value gaps) ==="
 // Chart on which the gaps are found (default: 1 minute).
@@ -78,6 +100,8 @@ input double MinGapUSD = 0.50;
 input int GapExpiryCandles = 30;
 // Most trades open at the same time.
 input int MaxOpenTrades = 4;
+// How many trades one gap may give (at most one new trade per candle).
+input int EntriesPerGap = 2;
 
 input group "=== 4. Trade size and exits ==="
 // Size of every trade, in lots (0.01 = the smallest normal size).
@@ -137,9 +161,15 @@ string   g_csvFile       = "";
 // Trend
 int      g_fastHandle    = INVALID_HANDLE;
 int      g_slowHandle    = INVALID_HANDLE;
-int      g_trendDir      = 0;            // +1 buys only, -1 sells only, 0 not known
+int      g_trendDir      = 0;            // +1 buys only, -1 sells only, 0 wait
+int      g_higherDir     = 0;            // structure on the higher chart
+int      g_middleDir     = 0;            // structure on the middle chart
+int      g_emaDir        = 0;            // EMA check
+double   g_rangeLow      = 0.0;          // current middle-chart swing range
+double   g_rangeHigh     = 0.0;
 double   g_emaFast       = 0.0;
 double   g_emaSlow       = 0.0;
+long     g_trendClosedIds[];             // trades closed because the direction flipped
 
 // Fair value gaps waiting for the price to come back
 struct Gap
@@ -148,7 +178,8 @@ struct Gap
    double   low;                         // bottom of the gap
    double   high;                        // top of the gap
    datetime made;                        // open time of the candle that completed it
-   bool     used;                        // a trade was already taken from it
+   int      entries;                     // trades already taken from it
+   bool     used;                        // no more trades from it
 };
 Gap      g_gaps[];
 datetime g_lastSignalCandle = 0;         // last 1-minute candle we processed
@@ -330,7 +361,13 @@ bool PositionIsOpen(const long positionId)
 bool ValidateInputs()
 {
    string problem = "";
-   if(TrendFastEMA < 1 || TrendSlowEMA < 1)
+   if(SwingStrength < 1 || StructureLookback < 4 * SwingStrength + 2)
+      problem = "SwingStrength must be 1 or more and StructureLookback much larger than it.";
+   else if(EntriesPerGap < 1)
+      problem = "EntriesPerGap must be 1 or more.";
+   else if(TradingHourStart < 0 || TradingHourStart > 24 || TradingHourEnd < 0 || TradingHourEnd > 24)
+      problem = "TradingHourStart and TradingHourEnd must be between 0 and 24.";
+   else if(TrendFastEMA < 1 || TrendSlowEMA < 1)
       problem = "TrendFastEMA and TrendSlowEMA must be 1 or more.";
    else if(TrendFastEMA >= TrendSlowEMA)
       problem = "TrendFastEMA must be smaller than TrendSlowEMA.";
@@ -584,6 +621,16 @@ bool WriteTradeToCsv(const long positionId, const bool force)
    string reason        = "unknown (closing deal not found)";
    if(outVolume > 0.0)
       reason = ExitReasonText(dealReason, dealComment);
+   for(int t = ArraySize(g_trendClosedIds) - 1; t >= 0; t--)
+   {
+      if(g_trendClosedIds[t] != positionId)
+         continue;
+      if(dealReason == DEAL_REASON_EXPERT)
+         reason = "trend changed";
+      int last = ArraySize(g_trendClosedIds) - 1;
+      g_trendClosedIds[t] = g_trendClosedIds[last];
+      ArrayResize(g_trendClosedIds, last);
+   }
    if(closeTime == 0)
       closeTime = TimeCurrent();
 
@@ -1045,23 +1092,116 @@ bool ReadFinishedCandleValue(const int handle, const ENUM_TIMEFRAMES tf, double 
 //  DIRECTION OF THE MARKET (TREND)
 //====================================================================
 
-// Fast EMA above slow EMA (finished candles) = +1, below = -1.
+// Market structure on one chart, from finished candles only.
+// Returns +1 if the last break of structure was upward (a close above the
+// last swing high), -1 if it was downward, 0 if there was none yet.
+// Also returns the last swing low and swing high (the current range).
+int StructureDirection(const ENUM_TIMEFRAMES tf, double &rangeLow, double &rangeHigh)
+{
+   rangeLow  = 0.0;
+   rangeHigh = 0.0;
+   int    count = StructureLookback;
+   double highs[];
+   double lows[];
+   double closes[];
+   if(CopyHigh(g_symbol, tf, 1, count, highs) != count || CopyLow(g_symbol, tf, 1, count, lows) != count ||
+      CopyClose(g_symbol, tf, 1, count, closes) != count)
+      return 0;                              // not enough history yet
+   int    dir = 0, strength = SwingStrength;
+   double swingHigh = 0.0, swingLow = 0.0;
+   bool   highUnbroken = false, lowUnbroken = false;
+   for(int i = 0; i < count; i++)            // oldest candle first
+   {
+      // The candle "strength" places back is now confirmed (or not) as a swing.
+      int j = i - strength;
+      if(j >= strength)
+      {
+         bool isHigh = true, isLow = true;
+         for(int k = j - strength; k <= j + strength; k++)
+         {
+            if(k == j)
+               continue;
+            if(highs[k] >= highs[j])
+               isHigh = false;
+            if(lows[k] <= lows[j])
+               isLow = false;
+         }
+         if(isHigh)
+         {
+            swingHigh    = highs[j];
+            highUnbroken = true;
+         }
+         if(isLow)
+         {
+            swingLow    = lows[j];
+            lowUnbroken = true;
+         }
+      }
+      // Break of structure: a CLOSE beyond the last swing.
+      if(highUnbroken && closes[i] > swingHigh)
+      {
+         dir          = 1;
+         highUnbroken = false;
+      }
+      if(lowUnbroken && closes[i] < swingLow)
+      {
+         dir         = -1;
+         lowUnbroken = false;
+      }
+   }
+   rangeLow  = swingLow;
+   rangeHigh = swingHigh;
+   return dir;
+}
+
+// Decide the direction: both structures must agree (and the EMA check, if on).
 void RefreshTrend()
 {
+   double low = 0.0, high = 0.0;
+   g_higherDir = StructureDirection(HigherTimeframe, low, high);
+   g_middleDir = StructureDirection(MiddleTimeframe, g_rangeLow, g_rangeHigh);
+   g_emaDir    = 0;
    double fast = 0.0, slow = 0.0;
    if(ReadFinishedCandleValue(g_fastHandle, TrendTimeframe, fast) &&
       ReadFinishedCandleValue(g_slowHandle, TrendTimeframe, slow) && fast > 0.0 && slow > 0.0)
    {
-      g_emaFast  = fast;
-      g_emaSlow  = slow;
-      g_trendDir = 0;
+      g_emaFast = fast;
+      g_emaSlow = slow;
       if(fast > slow)
-         g_trendDir = 1;
+         g_emaDir = 1;
       if(fast < slow)
-         g_trendDir = -1;
+         g_emaDir = -1;
    }
-   else
-      g_trendDir = 0;                        // data not ready: no trades
+   int bias = g_higherDir;
+   if(g_middleDir != bias)
+      bias = 0;
+   if(UseEMAFilter && g_emaDir != bias)
+      bias = 0;
+   g_trendDir = bias;
+}
+
+// Close this EA's trades that point against the direction "dir".
+void CloseTradesAgainst(const int dir)
+{
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket == 0 || PositionGetInteger(POSITION_MAGIC) != MagicNumber || PositionGetString(POSITION_SYMBOL) != g_symbol)
+         continue;
+      int  tradeDir = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) ? 1 : -1;
+      long id       = PositionGetInteger(POSITION_IDENTIFIER);
+      if(tradeDir != -dir)
+         continue;
+      if(g_trade.PositionClose(ticket) && RequestSucceeded(g_trade.ResultRetcode()))
+      {
+         int n = ArraySize(g_trendClosedIds);
+         ArrayResize(g_trendClosedIds, n + 1);
+         g_trendClosedIds[n] = id;
+      }
+      else
+         LogMsg("Could not close a trade after the direction changed (" + g_trade.ResultRetcodeDescription() + ").");
+   }
+   SyncPositions(false);
 }
 
 //====================================================================
@@ -1111,6 +1251,7 @@ void UpdateGaps()
    gap.high = 0.0;
    gap.made = lastCandle;
    gap.used = false;
+   gap.entries = 0;
    if(g_trendDir > 0 && low1 > high3 && low1 - high3 >= MinGapUSD)
    {
       gap.dir  = 1;
@@ -1136,6 +1277,17 @@ void UpdateGaps()
 //====================================================================
 //  OPENING TRADES
 //====================================================================
+
+// Is this server time inside TradingHourStart-TradingHourEnd?
+bool InTradingHours(const datetime t)
+{
+   if(TradingHourStart == TradingHourEnd || (TradingHourStart == 0 && TradingHourEnd == 24))
+      return true;
+   int hour = (int)(((long)t % 86400) / 3600);
+   if(TradingHourStart < TradingHourEnd)
+      return (hour >= TradingHourStart && hour < TradingHourEnd);
+   return (hour >= TradingHourStart || hour < TradingHourEnd);      // e.g. 22 to 3
+}
 
 // Everything that must be OK before ANY new trade.
 bool EntriesAllowed(const MqlTick &tick, string &reason)
@@ -1164,6 +1316,11 @@ bool EntriesAllowed(const MqlTick &tick, string &reason)
    if(tradeMode == SYMBOL_TRADE_MODE_DISABLED || tradeMode == SYMBOL_TRADE_MODE_CLOSEONLY)
    {
       reason = "the broker does not allow new trades on " + g_symbol + " right now";
+      return false;
+   }
+   if(!InTradingHours(TimeCurrent()))
+   {
+      reason = "outside the trading hours " + IntegerToString(TradingHourStart) + "-" + IntegerToString(TradingHourEnd);
       return false;
    }
    double spread = tick.ask - tick.bid;
@@ -1277,6 +1434,12 @@ void CheckGapEntries(const MqlTick &tick)
    }
    if(pick < 0)
       return;
+   if(UsePremiumDiscount && g_rangeHigh > g_rangeLow)
+   {
+      double middle = (g_rangeHigh + g_rangeLow) / 2.0;
+      if((g_trendDir > 0 && tick.bid > middle) || (g_trendDir < 0 && tick.bid < middle))
+         return;                             // buys only in discount, sells only in premium
+   }
    if(CountOurPositions() >= MaxOpenTrades)
       return;                                // already the most trades allowed
    string reason = "";
@@ -1291,7 +1454,11 @@ void CheckGapEntries(const MqlTick &tick)
    }
    g_lastEntryCandle = candle;
    if(OpenTrade(g_gaps[pick].dir, tick))
-      g_gaps[pick].used = true;
+   {
+      g_gaps[pick].entries++;
+      if(g_gaps[pick].entries >= EntriesPerGap)
+         g_gaps[pick].used = true;
+   }
 }
 
 // Once per new 1-minute candle: trend, gaps and news.
@@ -1302,6 +1469,8 @@ void OnNewSignalCandle()
       return;
    g_lastSignalCandle = candle;
    RefreshTrend();
+   if(CloseOnTrendChange && g_trendDir != 0)
+      CloseTradesAgainst(g_trendDir);
    UpdateGaps();
    g_newsWhat    = "";
    g_newsBlocked = UseNewsFilter && InNewsBlackout(TimeCurrent(), g_newsWhat);
@@ -1322,7 +1491,7 @@ string StatusText()
    if(g_newsBlocked)
       return "News time - no new trades (" + g_newsWhat + ")";
    if(g_trendDir == 0)
-      return "Waiting for chart data";
+      return "Waiting: the charts don't agree on a direction yet";
    return "Trading";
 }
 
@@ -1347,8 +1516,8 @@ void ShowStatus(const MqlTick &tick)
    text += "  |  " + g_symbol + "  |  " + IntegerToString(CountOurPositions()) + " of " + IntegerToString(MaxOpenTrades) +
            " trades open\n";
    text += "Status: " + StatusText() + "\n";
-   text += "Direction (" + TfName(TrendTimeframe) + " EMA " + IntegerToString(TrendFastEMA) + " vs " +
-           IntegerToString(TrendSlowEMA) + "): " + trend + "\n";
+   text += "Direction: " + trend + "   (structure " + TfName(HigherTimeframe) + " " + DirText(g_higherDir) + ", " +
+           TfName(MiddleTimeframe) + " " + DirText(g_middleDir) + (UseEMAFilter ? ", EMA " + DirText(g_emaDir) : "") + ")\n";
    text += "Gaps waiting for the price: " + IntegerToString(ArraySize(g_gaps)) + "  |  trades opened: " +
            IntegerToString(g_tradesOpened) + "\n";
    if(g_tpDistance > 0.0)
@@ -1434,9 +1603,10 @@ int OnInit()
    if(!g_isTester)
       LogTradesClosedWhileOffline();
 
-   LogMsg(StringFormat("%s started on %s | trend EMA %d/%d on %s | gaps on %s, at least %s | up to %d trades of %s lots | "
+   LogMsg(StringFormat("%s started on %s | structure %s + %s, EMA %d/%d on %s | gaps on %s, at least %s | up to %d trades of %s lots | "
                        "take-profit +%.1f%% / stop-loss -%.1f%% of margin",
-                       EA_NAME, g_symbol, TrendFastEMA, TrendSlowEMA, TfName(TrendTimeframe), TfName(SignalTimeframe),
+                       EA_NAME, g_symbol, TfName(HigherTimeframe), TfName(MiddleTimeframe), TrendFastEMA, TrendSlowEMA,
+                       TfName(TrendTimeframe), TfName(SignalTimeframe),
                        DoubleToString(MinGapUSD, 2), MaxOpenTrades, DoubleToString(TradeLots(), LotDigits()),
                        TakeProfitPercentOfMargin, StopLossPercentOfMargin));
    return INIT_SUCCEEDED;

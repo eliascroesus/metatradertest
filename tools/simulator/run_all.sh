@@ -68,6 +68,9 @@ scalp_set() {  # scalp_set <label> <seed> --set X=Y ...
 scalp_set "max 2 trades, 5-min gaps" 2 --set MaxOpenTrades=2 --set SignalTimeframe=PERIOD_M5
 scalp_set "daily loss limit 0.3%" 3 --set DailyLossLimitPercent=0.3
 scalp_set "tight spread filter" 4 --set MaxSpreadUSD=0.24
+scalp_set "wide targets (trend-change exits)" 1 --set TakeProfitPercentOfMargin=200 --set StopLossPercentOfMargin=300 --set SwingStrength=2
+scalp_set "premium/discount on, EMA off" 2 --set UsePremiumDiscount=true --set UseEMAFilter=false
+scalp_set "trading hours 15-19, 1 entry per gap" 3 --set TradingHourStart=15 --set TradingHourEnd=19 --set EntriesPerGap=1
 
 echo "4) Helper scripts"
 python3 mq5_to_cpp.py $REPO/MQL5/Scripts/GoldBreakout_ExportNews.mq5 --header mql5_sim.h > $B/news_sim.inc &&

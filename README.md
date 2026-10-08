@@ -15,10 +15,15 @@ small helper scripts for honest backtesting.
 
 ## GoldScalperFVG (the scalper)
 
-* **Direction:** EMA 50 vs EMA 200 on the 15-minute chart (finished candles). Fast above slow = buys only, below = sells only.
+* **Direction (market structure):** on the 1-hour and the 15-minute chart it finds swing highs/lows (`SwingStrength`
+  candles each side). A candle closing above the last swing high = bullish break of structure; closing below the last
+  swing low = bearish. It buys only when both charts are bullish (and EMA 50 > EMA 200 on 15 minutes, `UseEMAFilter`),
+  sells only when both are bearish, and waits when they disagree. With `CloseOnTrendChange` it closes trades that end
+  up against a new direction. Optional: `UsePremiumDiscount` (buy only in the lower half of the 15-minute swing range,
+  sell only in the upper half) and `TradingHourStart`/`TradingHourEnd` (server hours, e.g. the New York session).
 * **Entries:** fair value gaps on the 1-minute chart: three finished candles where the 1st and 3rd don't overlap
   (gap of at least `MinGapUSD`). When the price comes back into a gap that points with the trend, it opens a trade.
-  Each gap is used once and is forgotten after `GapExpiryCandles` candles or when a candle closes through it.
+  Each gap gives up to `EntriesPerGap` trades and is forgotten after `GapExpiryCandles` candles or when a candle closes through it.
 * **Size and number:** 0.01 lots per trade, up to 4 open at once, at most one new trade per 1-minute candle.
 * **Exits:** take-profit at +10% and stop-loss at -20% of each trade's margin, placed with the broker at once.
   With gold near $4,000 and 1:100 leverage that is about +$4 / -$8. Higher leverage makes these distances smaller.
