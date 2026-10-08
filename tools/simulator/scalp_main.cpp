@@ -41,37 +41,53 @@ struct OGap { int dir; double low, high; datetime made; bool used; int entries; 
 std::vector<OGap> ogaps;
 int oTrend = 0;
 
-// independent market-structure reading: swings with SwingStrength candles each side, close beyond = break
-int structureNow(int tf, double& lo, double& hi) {
+// independent market-structure reading: swings with `st` candles each side, close beyond = break.
+// brk = direction of a break made by the newest finished candle itself.
+int structureNow(int tf, double& lo, double& hi, int st, int look, int& brk) {
   auto& b = sim::S(tf).bars; int m = (int)b.size() - 1;      // finished candles: 0..m-1
-  lo = hi = 0; if(m < StructureLookback) return 0;
-  int first = m - StructureLookback, dir = 0; double sh = 0, sl = 0; bool hOpen = false, lOpen = false;
+  lo = hi = 0; brk = 0; if(m < look) return 0;
+  int first = m - look, dir = 0; double sh = 0, sl = 0; bool hOpen = false, lOpen = false;
   for(int i = first; i < m; i++) {
-    int j = i - SwingStrength;
-    if(j - SwingStrength >= first) {
+    int j = i - st;
+    if(j - st >= first) {
       bool isH = true, isL = true;
-      for(int k = j - SwingStrength; k <= j + SwingStrength; k++) { if(k == j) continue; if(b[k].h >= b[j].h) isH = false; if(b[k].l <= b[j].l) isL = false; }
+      for(int k = j - st; k <= j + st; k++) { if(k == j) continue; if(b[k].h >= b[j].h) isH = false; if(b[k].l <= b[j].l) isL = false; }
       if(isH) { sh = b[j].h; hOpen = true; }
       if(isL) { sl = b[j].l; lOpen = true; }
     }
-    if(hOpen && b[i].c > sh) { dir = 1; hOpen = false; }
-    if(lOpen && b[i].c < sl) { dir = -1; lOpen = false; }
+    if(hOpen && b[i].c > sh) { dir = 1; hOpen = false; if(i == m - 1) brk = 1; }
+    if(lOpen && b[i].c < sl) { dir = -1; lOpen = false; if(i == m - 1) brk = -1; }
   }
   lo = sl; hi = sh; return dir;
 }
+int structureNow(int tf, double& lo, double& hi) { int brk; return structureNow(tf, lo, hi, SwingStrength, StructureLookback, brk); }
 double oRangeLo = 0, oRangeHi = 0;
 bool inHours(datetime t) { // trading hours, written independently
   if(TradingHourStart == TradingHourEnd || (TradingHourStart == 0 && TradingHourEnd == 24)) return true;
   int h = (int)((t % 86400) / 3600);
   return TradingHourStart < TradingHourEnd ? (h >= TradingHourStart && h < TradingHourEnd) : (h >= TradingHourStart || h < TradingHourEnd); }
+int oTop = 0;
+int momentumNow() {
+  auto& b = sim::S(MomentumTimeframe).bars; int f = (int)b.size() - 2, L = std::max(MomentumShortCandles, MomentumLongCandles);
+  if(f - L < 0) return 0;
+  double now = b[f].c, s1 = b[f - MomentumShortCandles].c, s2 = b[f - MomentumLongCandles].c;
+  return (now > s1 && now > s2) ? 1 : ((now < s1 && now < s2) ? -1 : 0);
+}
 int trendNow() {
   double lo, hi;
+  oTop = structureNow(TopTimeframe, lo, hi);
   int h = structureNow(HigherTimeframe, lo, hi), m = structureNow(MiddleTimeframe, oRangeLo, oRangeHi);
   int e = 0; auto& s = sim::S(TrendTimeframe); int n = (int)s.bars.size();
   if(n >= 3) { double f = sim::emaAt(s, TrendFastEMA, n - 2), sl = sim::emaAt(s, TrendSlowEMA, n - 2); e = f > sl ? 1 : (f < sl ? -1 : 0); }
-  int bias = h; if(m != bias) bias = 0; if(UseEMAFilter && e != bias) bias = 0;
-  return bias;
+  int mo = momentumNow();
+  std::vector<std::pair<bool, int>> checks = {{UseTopStructure, oTop}, {UseHigherStructure, h}, {UseMiddleStructure, m}, {UseEMAFilter, e}, {UseMomentum, mo}};
+  int on = 0, up = 0, down = 0;
+  for(auto& c : checks) if(c.first) { on++; up += c.second > 0; down += c.second < 0; }
+  bool buy = on - up <= ChecksAllowedToDisagree && (!TopTimeframeMustAgree || oTop > 0);
+  bool sell = on - down <= ChecksAllowedToDisagree && (!TopTimeframeMustAgree || oTop < 0);
+  return buy == sell ? 0 : (buy ? 1 : -1);
 }
+int oBreak = 0; datetime oBreakCandle = 0; double oEma = 0, oPrevClose = 0;
 void oracleNewCandle() {
   oTrend = trendNow();
   auto& b = sim::S(SignalTimeframe).bars; int n = (int)b.size();
@@ -83,13 +99,28 @@ void oracleNewCandle() {
     bool old = (c1.t - g.made) >= (long)GapExpiryCandles * PeriodSeconds(SignalTimeframe);
     if(g.used || broken || old || g.dir != oTrend) ogaps.erase(ogaps.begin() + i);
   }
-  if(oTrend > 0 && c1.l > c3.h && c1.l - c3.h >= MinGapUSD) ogaps.push_back({1, c3.h, c1.l, c1.t, false, 0});
-  if(oTrend < 0 && c3.l > c1.h && c3.l - c1.h >= MinGapUSD) ogaps.push_back({-1, c1.h, c3.l, c1.t, false, 0});
+  if(UseGapEntries && oTrend > 0 && c1.l > c3.h && c1.l - c3.h >= MinGapUSD) ogaps.push_back({1, c3.h, c1.l, c1.t, false, 0});
+  if(UseGapEntries && oTrend < 0 && c3.l > c1.h && c3.l - c1.h >= MinGapUSD) ogaps.push_back({-1, c1.h, c3.l, c1.t, false, 0});
   if(ogaps.size() > MAX_GAPS) ogaps.erase(ogaps.begin());
+  // entry kind 2 (break of a small 1-minute swing) and kind 3 (EMA pullback)
+  oBreak = 0;
+  if(UseBreakEntries && oTrend != 0) {
+    double lo, hi; int brk; structureNow(SignalTimeframe, lo, hi, EntrySwingStrength, EntryStructureLookback, brk);
+    if(brk == oTrend) { oBreak = brk; oBreakCandle = b[n - 1].t; }
+  }
+  oEma = UsePullbackEntries ? sim::emaAt(sim::S(SignalTimeframe), PullbackEMA, n - 2) : 0; oPrevClose = c1.c;
+}
+// which entry kind the rules allow on this tick (0 none, 1 gap, 2 break, 3 pullback)
+int kindNow(int pick, double bid, datetime candle) {
+  if(oTrend == 0) return 0;
+  if(pick >= 0) return 1;
+  if(UseBreakEntries && oBreak == oTrend && oBreakCandle == candle) return 2;
+  if(UsePullbackEntries && oEma > 0 && ((oTrend > 0 && oPrevClose > oEma && bid <= oEma) || (oTrend < 0 && oPrevClose < oEma && bid >= oEma))) return 3;
+  return 0;
 }
 int pickGap(double bid) {
   for(int i = (int)ogaps.size() - 1; i >= 0; i--)
-    if(!ogaps[i].used && ogaps[i].dir == oTrend && bid >= ogaps[i].low && bid <= ogaps[i].high) return i;
+    if(UseGapEntries && !ogaps[i].used && ogaps[i].dir == oTrend && bid >= ogaps[i].low && bid <= ogaps[i].high) return i;
   return -1;
 }
 
@@ -109,8 +140,8 @@ int main(int argc, char** argv) {
   int days = argc > 2 ? atoi(argv[2]) : 60;
   sim::quiet = true;
   if(getenv("SIM_LIVE")) sim::isTester = false;
-  datetime warmStart = 1672617600, testStart = warmStart + 10 * 86400;
-  generateTicks(seed, warmStart, 10 + days, 4000.0);
+  datetime warmStart = 1672617600, testStart = warmStart + 90 * 86400;     // 90 days of history for the 4-hour structure
+  generateTicks(seed, warmStart, 90 + days, 4000.0);
   sim::initSeries();
   size_t k = 0;
   for(; k < sim::ticks.size() && sim::ticks[k].t < testStart; k++) { sim::now = sim::ticks[k]; sim::updateSeries(sim::now); }
@@ -119,7 +150,7 @@ int main(int argc, char** argv) {
   if(rc != 0) { std::cout << "OnInit returned " << rc << "\n"; return 2; }
   datetime lastCandle = iTime(_Symbol, SignalTimeframe, 0);
   std::set<long> known; std::set<datetime> enteredCandles;
-  std::map<long, std::string> expected; std::set<long> killIds;
+  std::map<long, std::string> expected, kindOf; std::set<long> killIds; int kindCount[4] = {0, 0, 0, 0};
   int opened = 0, maxOpenSeen = 0, missed = 0, buys = 0, sells = 0;
   for(; k < sim::ticks.size(); k++) {
     sim::now = sim::ticks[k]; sim::updateSeries(sim::now);
@@ -131,11 +162,12 @@ int main(int argc, char** argv) {
     int openBefore = (int)sim::positions.size();
     double spread = sim::now.ask - sim::now.bid;
     int pick = pickGap(sim::now.bid);
-    if(pick >= 0 && UsePremiumDiscount && oRangeHi > oRangeLo) { double mid = (oRangeHi + oRangeLo) / 2; if((oTrend > 0 && sim::now.bid > mid) || (oTrend < 0 && sim::now.bid < mid)) pick = -1; }
+    int kind = kindNow(pick, sim::now.bid, candle);
+    if(kind > 0 && UsePremiumDiscount && oRangeHi > oRangeLo) { double mid = (oRangeHi + oRangeLo) / 2; if((oTrend > 0 && sim::now.bid > mid) || (oTrend < 0 && sim::now.bid < mid)) kind = 0; }
     int againstBefore = 0; if(newCandle && CloseOnTrendChange && oTrend != 0) for(auto& p : sim::positions) if((p.type == POSITION_TYPE_BUY ? 1 : -1) == -oTrend) againstBefore++;
     int openAfterFlip = (int)sim::positions.size() - againstBefore;
     (void)openBefore;
-    bool shouldEnter = pick >= 0 && openAfterFlip < MaxOpenTrades && !enteredCandles.count(candle) && !oDayHit && !oKill &&
+    bool shouldEnter = kind > 0 && openAfterFlip < MaxOpenTrades && !enteredCandles.count(candle) && !oDayHit && !oKill &&
                        !(MaxSpreadUSD > 0 && spread > MaxSpreadUSD + 1e-9) && inHours(sim::now.t);
     OnTick();
     if(!sim::closeEvents.empty()) OnTrade();
@@ -150,7 +182,10 @@ int main(int argc, char** argv) {
       int dir = p.type == POSITION_TYPE_BUY ? 1 : -1; (dir > 0 ? buys : sells)++;
       if(!shouldEnter) oracle::fail("trade opened although the rules say no entry at " + oracle::ts(sim::now.t));
       if(dir != oTrend) oracle::fail("trade against the trend at " + oracle::ts(sim::now.t));
-      if(pick >= 0 && ++ogaps[pick].entries >= EntriesPerGap) ogaps[pick].used = true;
+      if(kind == 1 && ++ogaps[pick].entries >= EntriesPerGap) ogaps[pick].used = true;
+      const char* kn[] = {"?", "gap", "break", "pullback"};
+      if(p.comment != std::string("GSF ") + kn[kind]) oracle::fail("entry kind '" + p.comment + "' but the rules say " + kn[kind] + " at " + oracle::ts(sim::now.t));
+      kindOf[p.id] = kn[kind]; kindCount[kind]++;
       enteredCandles.insert(candle);
       double margin = p.volume * sim::contract * p.open / sim::leverage, perPrice = p.volume * sim::contract;
       double wantTp = TakeProfitPercentOfMargin / 100.0 * margin / perPrice, wantSl = StopLossPercentOfMargin / 100.0 * margin / perPrice;
@@ -176,17 +211,18 @@ int main(int argc, char** argv) {
   std::map<std::string, int> reasons; std::set<long> seen;
   while(std::getline(csv, line)) {
     if(line.empty() || line == "\r") continue; rows++;
-    auto c = splitCsv(line); if(c.size() != 13) { oracle::fail("CSV row with " + std::to_string(c.size()) + " columns"); continue; }
+    auto c = splitCsv(line); if(c.size() != 14) { oracle::fail("CSV row with " + std::to_string(c.size()) + " columns"); continue; }
     long id = atol(c[10].c_str()); reasons[c[8]]++;
     if(seen.count(id)) oracle::fail("trade logged twice"); seen.insert(id);
+    if(c[13] != kindOf[id]) oracle::fail("CSV entry kind '" + c[13] + "' but the trade was opened as " + kindOf[id]);
     if(!expected.count(id)) { if(c[8].find("end of test") == std::string::npos) oracle::fail("CSV row for a trade that did not close: " + line); continue; }
     if(c[8] != expected[id]) oracle::fail("exit reason '" + c[8] + "' but should be '" + expected[id] + "'");
     double net = 0; for(auto& d : sim::deals) if(d.posId == id) net += d.profit + d.commission + d.swap + d.fee;
     if(std::fabs(net - atof(c[7].c_str())) > 0.011) oracle::fail("CSV profit differs: " + line);
   }
   for(auto& e : expected) if(!seen.count(e.first)) oracle::fail("closed trade missing from CSV");
-  printf("trades %d (buy %d / sell %d) = %.1f per day | most open at once %d | balance %.2f | CSV rows %d | missed %d |",
-         opened, buys, sells, opened / (double)days, maxOpenSeen, sim::balance, rows, missed);
+  printf("trades %d (buy %d / sell %d; gap %d, break %d, pullback %d) = %.1f per day | most open at once %d | balance %.2f | CSV rows %d | missed %d |",
+         opened, buys, sells, kindCount[1], kindCount[2], kindCount[3], opened / (double)days, maxOpenSeen, sim::balance, rows, missed);
   for(auto& r : reasons) printf(" [%s]=%d", r.first.c_str(), r.second);
   printf(" | kill switch %s | checks failed %d\n", g_killSwitchOn ? "ON" : "off", oracle::problems);
   return oracle::problems == 0 ? 0 : 1;

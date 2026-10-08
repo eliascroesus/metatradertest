@@ -6,30 +6,47 @@ small helper scripts for honest backtesting.
 | File | What it is |
 |---|---|
 | `MQL5/Experts/GoldBreakoutEA.mq5` | The original robot: few, slow trend trades |
-| `MQL5/Experts/GoldScalperFVG.mq5` | The scalper: many small trades on fair value gaps (see below) |
+| `MQL5/Experts/GoldScalperFVG.mq5` | The scalper: many small trades in the market's direction (see below) |
 | `MQL5/Scripts/GoldBreakout_ExportNews.mq5` | Helper: saves past high-impact USD news times to a file, because MetaTrader's news calendar does not work inside the Strategy Tester |
 | `MQL5/Scripts/GoldBreakout_SpreadTestSymbol.mq5` | Helper: makes a copy of gold with double the spread, for the "double spread" stress test |
 | `tools/simulator/` | For programmers only: the automated checks used to test the robot's logic. Not needed in MetaTrader. |
 
 ---
 
-## GoldScalperFVG (the scalper)
+## GoldScalperFVG (the scalper), version 3
 
-* **Direction (market structure):** on the 1-hour and the 15-minute chart it finds swing highs/lows (`SwingStrength`
-  candles each side). A candle closing above the last swing high = bullish break of structure; closing below the last
-  swing low = bearish. It buys only when both charts are bullish (and EMA 50 > EMA 200 on 15 minutes, `UseEMAFilter`),
-  sells only when both are bearish, and waits when they disagree. With `CloseOnTrendChange` it closes trades that end
-  up against a new direction. Optional: `UsePremiumDiscount` (buy only in the lower half of the 15-minute swing range,
-  sell only in the upper half) and `TradingHourStart`/`TradingHourEnd` (server hours, e.g. the New York session).
-* **Entries:** fair value gaps on the 1-minute chart: three finished candles where the 1st and 3rd don't overlap
-  (gap of at least `MinGapUSD`). When the price comes back into a gap that points with the trend, it opens a trade.
-  Each gap gives up to `EntriesPerGap` trades and is forgotten after `GapExpiryCandles` candles or when a candle closes through it.
-* **Size and number:** 0.01 lots per trade, up to 4 open at once, at most one new trade per 1-minute candle.
+* **Direction (top-down vote):** five checks each vote BUY, SELL or "not sure":
+  market structure on the 4-hour, 1-hour and 15-minute charts (a candle closing above the last swing high = bullish
+  break of structure, closing below the last swing low = bearish; swings have `SwingStrength` candles each side),
+  EMA 50 vs EMA 200 on 15 minutes, and momentum (price vs 6 and 24 hours ago). It buys when at most
+  `ChecksAllowedToDisagree` (default 1) checks are not BUY **and** the 4-hour chart is BUY (`TopTimeframeMustAgree`:
+  never trade against the big picture). Selling is the mirror image. Each check can be switched off
+  (`UseTopStructure`, `UseHigherStructure`, `UseMiddleStructure`, `UseEMAFilter`, `UseMomentum`).
+  With `CloseOnTrendChange` it closes trades that end up against a new direction. Optional: `UsePremiumDiscount`
+  and `TradingHourStart`/`TradingHourEnd` (server hours, e.g. the London + New York sessions).
+* **Entries (three kinds, 1-minute chart, at most one new trade per minute):**
+  1. **gap**: price comes back into a fair value gap (three candles where the 1st and 3rd don't overlap, at least
+     `MinGapUSD`; up to `EntriesPerGap` trades per gap; forgotten after `GapExpiryCandles` candles or when a candle closes through it);
+  2. **break**: a 1-minute candle closes beyond the last small swing (`EntrySwingStrength`) in the trend's direction;
+     the robot joins in the next minute;
+  3. **pullback**: the price dips back to the 1-minute EMA (`PullbackEMA`, default 20) after a candle closed on the
+     trend's side of it.
+  Each can be switched off (`UseGapEntries`, `UseBreakEntries`, `UsePullbackEntries`). The CSV log has an
+  `EntryKind` column, so you can see which kind makes or loses money.
+* **Size and number:** 0.01 lots per trade, up to 4 open at once (`MaxOpenTrades`).
 * **Exits:** take-profit at +10% and stop-loss at -20% of each trade's margin, placed with the broker at once.
   With gold near $4,000 and 1:100 leverage that is about +$4 / -$8. Higher leverage makes these distances smaller.
 * **Safety:** same daily loss limit, kill switch, spread filter, news filter and CSV log as the original robot.
 * Needs a **hedging** account. Because the stop is twice as far as the target, it has to win about 2 out of 3 trades
   (plus the spread) just to break even, so test it before trusting it.
+* **Version 2 behaviour** (only gaps, 1h + 15m + EMA must all agree): `UseTopStructure=false`, `UseMomentum=false`,
+  `ChecksAllowedToDisagree=0`, `TopTimeframeMustAgree=false`, `UseBreakEntries=false`, `UsePullbackEntries=false`.
+
+Where the ideas come from: the top-down structure read (higher chart for direction, 1 minute for entries, break of
+structure, fair value gaps) is how TJR / ICT / "smart money" traders describe their method; there is no published
+test of their rules, so the robot is a mechanical version of them. The momentum check comes from academic research
+on trend following ("time-series momentum", Moskowitz, Ooi & Pedersen 2012, and Baltas & Kosowski, who found the
+effect at daily and weekly horizons too). No method predicts direction reliably all the time; the backtest decides.
 
 ---
 

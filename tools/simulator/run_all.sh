@@ -71,6 +71,11 @@ scalp_set "tight spread filter" 4 --set MaxSpreadUSD=0.24
 scalp_set "wide targets (trend-change exits)" 1 --set TakeProfitPercentOfMargin=200 --set StopLossPercentOfMargin=300 --set SwingStrength=2
 scalp_set "premium/discount on, EMA off" 2 --set UsePremiumDiscount=true --set UseEMAFilter=false
 scalp_set "trading hours 15-19, 1 entry per gap" 3 --set TradingHourStart=15 --set TradingHourEnd=19 --set EntriesPerGap=1
+scalp_set "version 2 settings (gaps only, 3 checks must agree)" 1 --set UseTopStructure=false --set UseMomentum=false --set ChecksAllowedToDisagree=0 --set TopTimeframeMustAgree=false --set UseBreakEntries=false --set UsePullbackEntries=false
+scalp_set "all 5 checks must agree" 4 --set ChecksAllowedToDisagree=0
+scalp_set "break entries only" 5 --set UseGapEntries=false --set UsePullbackEntries=false
+scalp_set "pullback entries only, 4h not the boss" 2 --set UseGapEntries=false --set UseBreakEntries=false --set TopTimeframeMustAgree=false
+scalp_set "8 trades, 2 checks may disagree, momentum 12/48" 3 --set MaxOpenTrades=8 --set ChecksAllowedToDisagree=2 --set MomentumShortCandles=12 --set MomentumLongCandles=48
 
 echo "4) Helper scripts"
 python3 mq5_to_cpp.py $REPO/MQL5/Scripts/GoldBreakout_ExportNews.mq5 --header mql5_sim.h > $B/news_sim.inc &&
