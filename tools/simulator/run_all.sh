@@ -15,7 +15,7 @@ pass() { echo "  ok    $1"; }
 fail() { echo "  FAIL  $1"; failures=$((failures + 1)); }
 
 echo "1) Syntax check"
-for f in Experts/GoldBreakoutEA Experts/GoldScalperFVG Scripts/GoldBreakout_ExportNews Scripts/GoldBreakout_SpreadTestSymbol; do
+for f in Experts/GoldBreakoutEA Experts/GoldScalperFVG Experts/GoldTrendStacker Scripts/GoldBreakout_ExportNews Scripts/GoldBreakout_SpreadTestSymbol; do
   python3 mq5_to_cpp.py $REPO/MQL5/$f.mq5 > $B/check.cpp &&
     g++ -std=c++17 -fsyntax-only -Wall -Wextra -Wno-unused-parameter -I. $B/check.cpp && pass "$f" || fail "$f"
 done
@@ -77,7 +77,25 @@ scalp_set "break entries only" 5 --set UseGapEntries=false --set UsePullbackEntr
 scalp_set "pullback entries only, 4h not the boss" 2 --set UseGapEntries=false --set UseBreakEntries=false --set TopTimeframeMustAgree=false
 scalp_set "8 trades, 2 checks may disagree, momentum 12/48" 3 --set MaxOpenTrades=8 --set ChecksAllowedToDisagree=2 --set MomentumShortCandles=12 --set MomentumLongCandles=48
 
-echo "4) Helper scripts"
+echo "4) GoldTrendStacker on a simulated market"
+stack_run() {  # stack_run <label> <seed> [--set X=Y ...]   (SIM_* env vars pass through)
+  local label=$1 seed=$2; shift 2
+  python3 mq5_to_cpp.py $REPO/MQL5/Experts/GoldTrendStacker.mq5 --header mql5_sim.h "$@" > $B/stack_sim.inc &&
+    g++ -std=c++17 -O2 -I. -I$B -o $B/stack stack_main.cpp || { fail "stacker $label (build)"; return; }
+  r=$(cd $B && rm -f simout_* && ./stack $seed 365); [ $? -eq 0 ] && pass "stacker, $label | ${r%% | CSV*}" || { fail "stacker $label"; echo "$r" | grep -m5 "CHECK FAILED"; }
+}
+for s in 1 2 3 4 5; do stack_run "market seed $s" $s; done
+stack_run "stack on every breakout (no protection rule)" 2 --set StackOnlyWhenProtected=false
+stack_run "8 trades, keep opposite trades" 3 --set MaxOpenTrades=8 --set CloseOnOppositeBreakout=false
+stack_run "kill switch at 3%" 4 --set KillSwitchDrawdownPercent=3.0
+stack_run "daily loss limit 0.5%" 1 --set DailyLossLimitPercent=0.5
+SIM_COMMISSION=3.5 SIM_STOPSLEVEL=50 stack_run "commission + broker stop level" 5
+stack_run "tight spread filter" 2 --set MaxSpreadUSD=0.24
+SIM_NEWSFILE=news_test.csv stack_run "news file" 5
+SIM_LIVE=1 SIM_RESTART_EVERY=37000 stack_run "live mode, restarts" 3
+stack_run "15-minute entries, 1-hour trend" 4 --set EntryTimeframe=PERIOD_M15 --set ATRTimeframe=PERIOD_M15 --set TrendTimeframe=PERIOD_H1
+
+echo "5) Helper scripts"
 python3 mq5_to_cpp.py $REPO/MQL5/Scripts/GoldBreakout_ExportNews.mq5 --header mql5_sim.h > $B/news_sim.inc &&
   g++ -std=c++17 -O1 -I. -I$B -o $B/news_test news_main.cpp || fail "news script (build)"
 for clock in ny7 gmt0 eu; do for cal in uniform seasonal; do for month in 1 3 6 11; do

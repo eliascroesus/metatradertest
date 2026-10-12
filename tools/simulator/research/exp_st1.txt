@@ -1,0 +1,8 @@
+st_default	
+st_max1	--set MaxOpenTrades=1
+st_unprot	--set StackOnlyWhenProtected=false
+st_max8	--set MaxOpenTrades=8
+st_noclose	--set CloseOnOppositeBreakout=false
+st_lb10	--set BreakoutLookbackCandles=10
+st_m15	--set EntryTimeframe=PERIOD_M15 --set ATRTimeframe=PERIOD_M15
+st_trail4	--set TrailingStopATRMultiplier=4.0

@@ -1,0 +1,6 @@
+bo_m15	--set EntryTimeframe=PERIOD_M15 --set ATRTimeframe=PERIOD_M15
+bo_m15_h1	--set EntryTimeframe=PERIOD_M15 --set ATRTimeframe=PERIOD_M15 --set TrendTimeframe=PERIOD_H1
+bo_m5_h1	--set EntryTimeframe=PERIOD_M5 --set ATRTimeframe=PERIOD_M5 --set TrendTimeframe=PERIOD_H1
+bo_m5_m15	--set EntryTimeframe=PERIOD_M5 --set ATRTimeframe=PERIOD_M5 --set TrendTimeframe=PERIOD_M15
+bo_lb10	--set BreakoutLookbackCandles=10
+bo_trail2	--set TrailingStopATRMultiplier=2.0

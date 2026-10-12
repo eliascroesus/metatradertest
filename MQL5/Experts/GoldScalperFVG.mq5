@@ -4,6 +4,11 @@
 //|     a top-down vote; gaps, breaks and pullbacks on 1 minute.     |
 //+------------------------------------------------------------------+
 //
+//  WARNING: tested on real gold prices from 2012 to mid-2018, every version
+//  of this scalper LOST money (profit factor 0.85-0.93, about 62% winners
+//  where about 66% are needed). See the README. GoldTrendStacker is the
+//  robot that made money in the same tests. Use this one on demo only.
+//
 //  HOW TO READ THIS FILE
 //  ---------------------
 //  Lines that start with // are notes for people. MetaTrader ignores

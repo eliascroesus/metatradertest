@@ -1,0 +1,8 @@
+t4	--set TrailingStopATRMultiplier=4.0
+t4_sl15	--set TrailingStopATRMultiplier=4.0 --set InitialStopATRMultiplier=1.5
+t4_lb40	--set TrailingStopATRMultiplier=4.0 --set BreakoutLookbackCandles=40
+t4_unprot	--set TrailingStopATRMultiplier=4.0 --set StackOnlyWhenProtected=false
+t4_max6	--set TrailingStopATRMultiplier=4.0 --set MaxOpenTrades=6
+t5	--set TrailingStopATRMultiplier=5.0
+t4_be15	--set TrailingStopATRMultiplier=4.0 --set BreakEvenTriggerMultiple=1.5
+t4_ema200	--set TrailingStopATRMultiplier=4.0 --set TrendEMAPeriod=200

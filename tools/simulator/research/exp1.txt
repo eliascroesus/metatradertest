@@ -1,0 +1,12 @@
+v3	
+v2	--set UseTopStructure=false --set UseMomentum=false --set ChecksAllowedToDisagree=0 --set TopTimeframeMustAgree=false --set UseBreakEntries=false --set UsePullbackEntries=false
+v3_gapsonly	--set UseBreakEntries=false --set UsePullbackEntries=false
+v3_breakonly	--set UseGapEntries=false --set UsePullbackEntries=false
+v3_pullonly	--set UseGapEntries=false --set UseBreakEntries=false
+v3_allagree	--set ChecksAllowedToDisagree=0
+v3_sl10	--set StopLossPercentOfMargin=10
+v3_sl30	--set StopLossPercentOfMargin=30
+v3_london_ny	--set TradingHourStart=10 --set TradingHourEnd=20
+v3_ny	--set TradingHourStart=15 --set TradingHourEnd=20
+v3_tp20sl20	--set TakeProfitPercentOfMargin=20 --set StopLossPercentOfMargin=20
+v3_noclose	--set CloseOnTrendChange=false

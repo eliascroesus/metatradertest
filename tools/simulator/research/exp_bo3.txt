@@ -1,0 +1,8 @@
+bo_lb40	--set BreakoutLookbackCandles=40
+bo_lb55	--set BreakoutLookbackCandles=55
+bo_ema50	--set TrendEMAPeriod=50
+bo_ema200	--set TrendEMAPeriod=200
+bo_sl15	--set InitialStopATRMultiplier=1.5
+bo_sl3	--set InitialStopATRMultiplier=3.0
+bo_trail4	--set TrailingStopATRMultiplier=4.0
+bo_nobe	--set BreakEvenTriggerMultiple=100

@@ -1,0 +1,8 @@
+tp20sl40	--set TakeProfitPercentOfMargin=20 --set StopLossPercentOfMargin=40
+tp40sl80	--set TakeProfitPercentOfMargin=40 --set StopLossPercentOfMargin=80
+tp50sl50	--set TakeProfitPercentOfMargin=50 --set StopLossPercentOfMargin=50
+tp100sl50	--set TakeProfitPercentOfMargin=100 --set StopLossPercentOfMargin=50
+tp200sl100	--set TakeProfitPercentOfMargin=200 --set StopLossPercentOfMargin=100
+tp400sl150	--set TakeProfitPercentOfMargin=400 --set StopLossPercentOfMargin=150
+tp400sl150_d1	--set TakeProfitPercentOfMargin=400 --set StopLossPercentOfMargin=150 --set TopTimeframe=PERIOD_D1
+tp100sl50_m15	--set TakeProfitPercentOfMargin=100 --set StopLossPercentOfMargin=50 --set SignalTimeframe=PERIOD_M15

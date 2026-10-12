@@ -6,14 +6,79 @@ small helper scripts for honest backtesting.
 | File | What it is |
 |---|---|
 | `MQL5/Experts/GoldBreakoutEA.mq5` | The original robot: few, slow trend trades |
-| `MQL5/Experts/GoldScalperFVG.mq5` | The scalper: many small trades in the market's direction (see below) |
+| `MQL5/Experts/GoldTrendStacker.mq5` | **Recommended.** The original robot's trend edge, traded more often: up to 4 stacked trades (see below) |
+| `MQL5/Experts/GoldScalperFVG.mq5` | The 1-minute scalper. **Lost money on real 2012-2018 gold prices in every version tested** (see below) |
 | `MQL5/Scripts/GoldBreakout_ExportNews.mq5` | Helper: saves past high-impact USD news times to a file, because MetaTrader's news calendar does not work inside the Strategy Tester |
 | `MQL5/Scripts/GoldBreakout_SpreadTestSymbol.mq5` | Helper: makes a copy of gold with double the spread, for the "double spread" stress test |
 | `tools/simulator/` | For programmers only: the automated checks used to test the robot's logic. Not needed in MetaTrader. |
 
 ---
 
+## Research on real gold prices (October 2026)
+
+All three robots were run, with their real code, on **real gold ticks (bid and ask) from January 2012 to June 2018**
+(Dukascopy data, about 147 million ticks, see `tools/simulator/research/`). Settings were chosen on 2012-2015 only;
+2016 - mid 2018 was kept aside as an untouched final test, like the checklist below asks. Prices were lifted x3 so that
+gold sits near today's level ($3,100-5,400) while the spread stays in real dollars, so spread vs. profit target is like
+today. 10,000 starting balance, 1:100 leverage, kill switch on unless noted.
+
+| Robot (default settings) | 2012-2015 | 2016 - mid 2018 (final test) | Trades per trading day |
+|---|---|---|---|
+| GoldScalperFVG v3 (1-minute, +10% / -20% of margin) | profit factor 0.87, account wiped out | 0.87 (first half 2018) | ~20 |
+| GoldScalperFVG v2 settings | 0.86, wiped out | - | ~20 |
+| GoldBreakoutEA (1 trade at a time) | **1.23, +25%**, max drawdown 9.4% | **1.15, +10%**, drawdown 6.6% | 0.5 |
+| **GoldTrendStacker** (up to 4 stacked trades, 0.4% risk) | **1.44, +66%**, drawdown 12.5% | **1.20, +17%**, drawdown 10.3% | 0.8 |
+
+GoldTrendStacker over the whole 6.5 years at its default 0.4% risk per trade:
+
+| Test | Result |
+|---|---|
+| Normal spread | +96%, profit factor 1.32, max drawdown 12.5%, 1,314 trades |
+| Spread +$0.30 on every trade (double spread) | +72%, profit factor 1.25, max drawdown 12.6% |
+| Real 2012-2018 prices, not lifted (spread 3x heavier) | +69%, profit factor 1.22, max drawdown 14.6% |
+| Losing years | 2012 and 2016 (small losses) |
+
+What the tests showed:
+
+* **The 1-minute scalper has no edge.** With a +$4 target and -$8 stop, a coin-flip entry wins about 64% of the time and
+  has a profit factor of about 0.89 after the spread. Every scalper version landed at 62-64% wins and 0.85-0.93, whatever
+  the direction method (market structure, EMA, momentum, all checks agreeing, sessions). At that size gold moves like a
+  coin flip and the spread decides. Bigger targets (up to +400% / -150% of margin) only brought it to break-even.
+* **Trend following on the 1-hour chart has an edge**, and it held in both halves of the data and in 15 of 16 setting
+  variations. This matches the published research on trend following ("time-series momentum").
+* **The edge fades on faster charts**: the same breakout on 15-minute candles was break-even (0.98-1.04), on 5-minute
+  candles it lost (0.81-0.88). So "more trades" cannot come from faster charts; it comes from stacking trades into
+  trends that already work, which is what GoldTrendStacker does.
+* Robots that advertise 80-95% win rates on gold are almost always grids or martingales: many small wins, then one huge
+  loss. A high win rate on its own says nothing; the profit factor and the drawdown do.
+
+None of this guarantees the future: the data ends in mid-2018, and your broker's prices and spreads differ. Run the
+checklist below in your own Strategy Tester before trading real money.
+
+---
+
+## GoldTrendStacker (recommended)
+
+* **Direction:** buys only while the last finished 4-hour candle closed above its EMA 100, sells only while below.
+* **Entry:** a finished 1-hour candle closes above the highest high of the 20 candles before it (sell: below the lowest low).
+* **Stacking:** every new breakout in the same direction adds a trade, up to `MaxOpenTrades` (4) at once, but only when
+  every trade already open has its stop at break-even or better (`StackOnlyWhenProtected`). So at most one trade can
+  still lose money at any moment. A breakout the other way closes the old direction's trades (`CloseOnOppositeBreakout`).
+* **Exits, each trade on its own:** first stop 2 x ATR(14, 1 hour); stop to break-even when the profit equals that
+  distance; then the stop follows the best price at 4 x ATR. No fixed take-profit.
+* **Size:** 0.4% of the balance at risk per trade (lots from the tick value, rounded down; skipped if the smallest lot
+  would risk more than 1%). 0.4% instead of 0.5% keeps the worst drawdown in the tests under the 15% kill switch.
+* **Safety:** daily loss limit 2%, kill switch 15%, spread filter, news filter, CSV log (`EntryKind` = breakout or
+  stacked; exit reason = first stop, break-even stop, trailing stop, opposite breakout, kill switch).
+* About 200 trades a year (0.8 per trading day): far fewer than a scalper, but this is the version that made money.
+* Needs a **hedging** account. Set the Strategy Tester to the **H1** chart.
+
 ## GoldScalperFVG (the scalper), version 3
+
+> **Warning:** on real gold prices 2012-2018 every version of this scalper lost money (profit factor 0.85-0.93, see the
+> research above). Your own 2024-2026 backtest of version 2 was profitable during gold's strong rally; the longer test
+> says that was the trend, not an edge. Use it on a demo account only.
+
 
 * **Direction (top-down vote):** five checks each vote BUY, SELL or "not sure":
   market structure on the 4-hour, 1-hour and 15-minute charts (a candle closing above the last swing high = bullish
@@ -50,7 +115,7 @@ effect at daily and weekly horizons too). No method predicts direction reliably 
 
 ---
 
-## What the robot does (plain language)
+## GoldBreakoutEA: what the robot does (plain language)
 
 1. **Direction (4-hour chart).** It only buys while the last *finished* 4-hour candle closed above
    the 100-period EMA (a smoothed average of the price), and only sells while it closed below it.
