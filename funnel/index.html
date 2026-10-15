@@ -31,6 +31,7 @@
   --dc-fg: #dbdee1;
   --dc-muted: #949ba4;
   --dc-name: #f2f3f5;
+  --dc-feed: #1e1f22;      /* Discord channel background */
   --ph: #16213d;           /* video placeholder fill */
   --ph-line: rgba(95, 180, 255, .12);
 
@@ -360,6 +361,52 @@ h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; text-al
 .faq h3 { font-size: clamp(1.2rem, 3vw, 1.7rem); font-weight: 800; }
 .faqs { width: 100%; display: grid; gap: 40px; }
 
+/* ---------- Booked: video testimonials + screenshot feed ---------- */
+.video--split::before {
+  content: ""; position: absolute; inset: 0 50% 0 0;
+  background: rgba(255, 255, 255, .045);
+  border-right: 2px solid rgba(255, 255, 255, .1);
+}
+.video__who {
+  position: absolute; bottom: 14px;
+  font-size: .68rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--muted); background: rgba(0, 0, 0, .4);
+  padding: 3px 8px; border-radius: 4px;
+}
+.video__who--l { left: 12px; }
+.video__who--r { right: 12px; }
+.more { font-size: clamp(1.15rem, 2.8vw, 1.5rem); font-weight: 800; }
+.feed {
+  width: 100%; max-width: 560px;
+  background: var(--dc-feed);
+  color: var(--dc-fg);
+  border-radius: 14px;
+  padding-block: 8px;
+  box-shadow: 0 0 0 1px rgba(95, 180, 255, .4), 0 0 46px rgba(95, 180, 255, .22);
+  font-size: .92rem;
+}
+.msg { display: flex; gap: 12px; padding: 12px 16px; }
+.msg + .msg { padding-top: 4px; }
+.msg .avatar { width: 40px; height: 40px; }
+.msg__body { min-width: 0; flex: 1; }
+.msg__head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.msg__name { font-weight: 700; color: var(--role, #7cc4ff); }
+.role {
+  font-size: .64rem; font-weight: 700; letter-spacing: .04em;
+  background: rgba(255, 255, 255, .08); color: var(--dc-name);
+  border-radius: 4px; padding: 1px 5px;
+}
+.msg__time { color: var(--dc-muted); font-size: .74rem; }
+.msg p { margin: 2px 0 8px; }
+.msg .shot { max-width: 380px; }
+.shots-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-width: 420px; }
+.daysplit {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--dc-muted); font-size: .74rem; font-weight: 700;
+  padding: 10px 16px;
+}
+.daysplit::before, .daysplit::after { content: ""; flex: 1; height: 1px; background: rgba(255, 255, 255, .1); }
+
 /* ---------- Footer ---------- */
 .foot { max-width: 720px; text-align: center; color: var(--muted); font-size: .72rem; line-height: 1.6; }
 .foot nav { display: flex; justify-content: center; gap: 14px; margin-bottom: 8px; font-size: .78rem; }
@@ -683,6 +730,97 @@ h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; text-al
       </section>
     </div>
 
+    <h2 class="step"><b>Step #3:</b> Hear From Members Who've Done It</h2>
+
+    <div class="faqs">
+      <section class="faq">
+        <h3>[Member] Got A [$X] Payout [X] Weeks After Joining</h3>
+        <div class="video video--split" data-video="testi1">
+          <span class="video__who video__who--l">Member</span>
+          <span class="video__who video__who--r">Coach</span>
+          <div class="video__ph">
+            <span class="video__tag">Video placeholder</span>
+            <button class="video__play" type="button" aria-label="Play testimonial video"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg></button>
+            <span class="video__name">Testimonial interview #1</span>
+          </div>
+        </div>
+      </section>
+      <section class="faq">
+        <h3>How [Member] Quit Their 9‑5 After Making [$X] In [X] Months</h3>
+        <div class="video video--split" data-video="testi2">
+          <span class="video__who video__who--l">Member</span>
+          <span class="video__who video__who--r">Coach</span>
+          <div class="video__ph">
+            <span class="video__tag">Video placeholder</span>
+            <button class="video__play" type="button" aria-label="Play testimonial video"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg></button>
+            <span class="video__name">Testimonial interview #2</span>
+          </div>
+        </div>
+      </section>
+      <section class="faq">
+        <h3>[Member] Went From [Before] To [After] In [X] Days</h3>
+        <div class="video video--split" data-video="testi3">
+          <span class="video__who video__who--l">Member</span>
+          <span class="video__who video__who--r">Coach</span>
+          <div class="video__ph">
+            <span class="video__tag">Video placeholder</span>
+            <button class="video__play" type="button" aria-label="Play testimonial video"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg></button>
+            <span class="video__name">Testimonial interview #3</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <h3 class="more">There's More…</h3>
+
+    <!-- Screenshot wall: replace each .shot with <img src="your-screenshot.png" alt=""> -->
+    <section class="feed" aria-label="Member wins from the Discord">
+      <div class="msg">
+        <span class="avatar" style="--av:#e67e22">M1</span>
+        <div class="msg__body">
+          <div class="msg__head"><span class="msg__name">Member Name</span><span class="role">Member</span><span class="msg__time">2:34 PM</span></div>
+          <p>[First payout message]</p>
+          <div class="shot" style="--h:280px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Payout approval email placeholder</div></div>
+          <div class="reacts"><span>🔥 5</span></div>
+        </div>
+      </div>
+      <div class="msg">
+        <span class="avatar" style="--av:#5865f2">C</span>
+        <div class="msg__body">
+          <div class="msg__head"><span class="msg__name">Coach</span><span class="role">Coach</span><span class="msg__time">3:23 PM</span></div>
+          <p>[Coach reply]</p>
+        </div>
+      </div>
+      <div class="daysplit">[Date]</div>
+      <div class="msg">
+        <span class="avatar" style="--av:#3ba55c">M2</span>
+        <div class="msg__body">
+          <div class="msg__head"><span class="msg__name">Member Name</span><span class="role">Member</span><span class="msg__time">Yesterday at 6:01 PM</span></div>
+          <p>[Message about how long they've traded the strategy]</p>
+          <div class="shots-2"><div class="shot" style="--h:210px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Payout email placeholder</div></div><div class="shot" style="--h:210px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Image placeholder</div></div></div>
+          <div class="reacts"><span>🔥 10</span></div>
+        </div>
+      </div>
+      <div class="msg">
+        <span class="avatar" style="--av:#eb459e">M3</span>
+        <div class="msg__body">
+          <div class="msg__head"><span class="msg__name">Member Name</span><span class="role">Member</span><span class="msg__time">Today at 9:12 AM</span></div>
+          <p>[Message about their payout total this month]</p>
+          <div class="shot" style="--h:190px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Payment received screenshot placeholder</div></div>
+          <div class="reacts"><span>🔥 9</span><span>💯 3</span></div>
+        </div>
+      </div>
+      <div class="msg">
+        <span class="avatar" style="--av:#faa61a">M4</span>
+        <div class="msg__body">
+          <div class="msg__head"><span class="msg__name">Member Name</span><span class="role">Member</span><span class="msg__time">Today at 1:47 PM</span></div>
+          <p>[Message about passing their evaluation]</p>
+          <div class="shot" style="--h:170px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Evaluation passed screenshot placeholder</div></div>
+          <div class="reacts"><span>👏 6</span></div>
+        </div>
+      </div>
+    </section>
+
     <footer class="foot">
       <nav><a href="#privacy">Privacy Policy</a><a href="#terms">Terms of Service</a><a href="#disclaimer">Disclaimer</a></nav>
       [Risk disclaimer placeholder] Trading involves substantial risk of loss. Results shown are not typical.
@@ -716,7 +854,10 @@ const CONFIG = {
     faqInside: "",
     faqLegit: "",
     faqWho: "",
-    faqTime: ""
+    faqTime: "",
+    testi1: "",
+    testi2: "",
+    testi3: ""
   },
 
   // Call slots offered on each open weekday (24h "HH:MM", in the visitor's own timezone).
