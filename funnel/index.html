@@ -1,0 +1,921 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trading Mentorship Funnel</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,600;0,700;0,800;1,700;1,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
+<style>
+/* Layout: three funnel steps in one file (opt-in → VSL + application → booked), each a
+   black-to-midnight-blue band with a centred column, white cards for forms, gold for the one action. */
+:root {
+  color-scheme: dark;
+  --ink: #04060c;          /* top of every band */
+  --deep: #0c2f78;         /* bottom of every band */
+  --fg: #f4f7ff;
+  --muted: #a9bbdd;
+  --accent: #5fb4ff;       /* highlighted words in headlines */
+  --gold: #f7c948;
+  --gold-2: #e6a417;
+  --gold-ink: #241a02;
+  --card: #ffffff;
+  --card-ink: #111a2e;
+  --card-muted: #66708a;
+  --line: #dfe4ee;
+  --field: #f6f8fc;
+  --danger: #d93a3a;
+  --dc-bg: #2b2d31;        /* Discord message card */
+  --dc-fg: #dbdee1;
+  --dc-muted: #949ba4;
+  --dc-name: #f2f3f5;
+  --ph: #16213d;           /* video placeholder fill */
+  --ph-line: rgba(95, 180, 255, .12);
+
+  --display: "Montserrat", "Arial Black", "Helvetica Neue", Arial, sans-serif;
+  --body: "DM Sans", "Helvetica Neue", Arial, sans-serif;
+
+  --gutter-l: max(16px, env(safe-area-inset-left, 0px));
+  --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--ink);
+  color: var(--fg);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Bands & column ---------- */
+.view {
+  min-height: 100vh;
+  background: linear-gradient(180deg, var(--ink) 0%, var(--ink) 14%, var(--deep) 100%);
+  padding-block: 28px 56px;
+}
+.wrap {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding-left: var(--gutter-l);
+  padding-right: var(--gutter-r);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+.wrap--narrow { max-width: 760px; }
+
+.logo {
+  font-family: var(--display);
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  font-size: .78rem;
+  color: var(--muted);
+  border: 1px dashed rgba(169, 187, 221, .45);
+  border-radius: 999px;
+  padding: 6px 16px;
+}
+
+/* ---------- Type ---------- */
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; text-align: center; }
+.headline {
+  font-size: clamp(1.7rem, 4.4vw, 2.6rem);
+  font-weight: 800;
+  line-height: 1.15;
+  max-width: 22ch;
+}
+.hl { color: var(--accent); }
+.sub {
+  font-size: clamp(1.1rem, 2.6vw, 1.45rem);
+  font-weight: 800;
+  line-height: 1.25;
+}
+.step {
+  font-size: clamp(1.1rem, 2.8vw, 1.6rem);
+  font-weight: 800;
+  font-style: italic;
+  line-height: 1.25;
+}
+.step b { color: var(--accent); font-weight: 800; }
+.warn {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: clamp(1.05rem, 2.6vw, 1.5rem);
+  font-weight: 800;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: .01em;
+}
+.warn span { text-align: center; }
+.warn svg { flex: none; width: 1.3em; height: 1.3em; color: var(--gold); }
+.warn u { text-decoration-thickness: 2px; text-underline-offset: 4px; }
+
+/* ---------- Scarcity bar ---------- */
+.scarcity {
+  width: 100%; max-width: 440px;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: grid; gap: 8px;
+}
+.scarcity__row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.pill {
+  font-size: .62rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  border: 1px solid rgba(95, 180, 255, .55); color: var(--accent);
+  border-radius: 999px; padding: 3px 9px;
+}
+.spots { font-weight: 700; font-size: .85rem; font-variant-numeric: tabular-nums; }
+.meter { height: 8px; border-radius: 999px; background: rgba(255, 255, 255, .1); overflow: hidden; }
+.meter span {
+  display: block; height: 100%; width: var(--fill, 88%);
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), #9fd3ff);
+  animation: fill 1.6s cubic-bezier(.2, .7, .2, 1);
+}
+@keyframes fill { from { width: 62%; } }
+.scarcity small { color: var(--muted); font-size: .72rem; display: flex; align-items: center; gap: 4px; }
+.scarcity small svg { width: 12px; height: 12px; color: var(--gold); }
+
+/* ---------- White form card ---------- */
+.card {
+  width: 100%;
+  background: var(--card);
+  color: var(--card-ink);
+  border-radius: 22px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .45);
+}
+.optin { max-width: 560px; padding: 24px clamp(18px, 4vw, 30px) 18px; display: grid; gap: 12px; }
+.optin h2 { font-size: clamp(1.35rem, 3.6vw, 1.75rem); font-weight: 800; display: flex; justify-content: center; align-items: center; gap: 10px; }
+.optin h2 svg { width: 1.1em; height: 1.1em; color: var(--deep); }
+
+.field { display: grid; gap: 4px; }
+.field label { font-size: .82rem; font-weight: 700; color: var(--card-ink); }
+.field label .req { color: var(--danger); }
+.input, .select {
+  width: 100%;
+  font: inherit; font-size: .95rem;
+  color: var(--card-ink);
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  min-height: 46px;
+}
+.input::placeholder { color: #9aa3b8; }
+.input:focus, .select:focus { outline: none; border-color: var(--deep); box-shadow: 0 0 0 3px rgba(12, 47, 120, .15); }
+.input[aria-invalid="true"] { border-color: var(--danger); }
+.phone { display: grid; grid-template-columns: auto 1fr; gap: 8px; }
+.phone .select { width: auto; padding-right: 8px; }
+.error { color: var(--danger); font-size: .8rem; min-height: 0; margin: 0; }
+
+.btn-gold {
+  width: 100%;
+  font: inherit; font-family: var(--display); font-weight: 800; font-size: 1rem;
+  color: var(--gold-ink);
+  background: linear-gradient(180deg, var(--gold), var(--gold-2));
+  border: 0; border-radius: 12px;
+  padding: 15px 18px;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(230, 164, 23, .35), inset 0 1px 0 rgba(255, 255, 255, .5);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.btn-gold:hover { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(230, 164, 23, .45), inset 0 1px 0 rgba(255, 255, 255, .5); }
+.btn-gold:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.legal { text-align: center; font-size: .75rem; color: var(--card-muted); }
+.legal a { color: var(--card-muted); }
+
+/* ---------- Discord-style proof wall ---------- */
+.proof { width: 100%; columns: 2 300px; column-gap: 16px; }
+.dc {
+  break-inside: avoid;
+  margin: 0 0 16px;
+  background: var(--dc-bg);
+  color: var(--dc-fg);
+  border-radius: 10px;
+  padding: 14px;
+  font-size: .9rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+}
+.dc__head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.avatar {
+  flex: none; width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-weight: 700; font-size: .85rem; color: #fff;
+  background: var(--av, #5865f2);
+}
+.dc__name { color: var(--dc-name); font-weight: 700; }
+.dc__time { color: var(--dc-muted); font-size: .75rem; margin-left: 4px; }
+.dc p { margin: 0 0 10px; }
+.mention { background: rgba(88, 101, 242, .3); color: #c9cdfb; border-radius: 3px; padding: 0 3px; }
+.shot {
+  display: grid; place-items: center; text-align: center;
+  height: var(--h, 170px);
+  border: 1.5px dashed rgba(219, 222, 225, .28);
+  border-radius: 8px;
+  background: repeating-linear-gradient(135deg, rgba(255, 255, 255, .03) 0 10px, transparent 10px 20px);
+  color: var(--dc-muted);
+  font-size: .78rem; font-weight: 500;
+  padding: 10px;
+}
+.shot svg { width: 26px; height: 26px; display: block; margin: 0 auto 6px; opacity: .7; }
+.reacts { display: flex; gap: 6px; margin-top: 10px; }
+.reacts span {
+  background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 8px; padding: 1px 8px; font-size: .78rem; color: var(--dc-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Video placeholder ---------- */
+.video {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 6px;
+  overflow: hidden;
+  background:
+    linear-gradient(var(--ph-line) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(90deg, var(--ph-line) 1px, transparent 1px) 0 0 / 48px 48px,
+    radial-gradient(ellipse at center, #1f3266 0%, var(--ph) 70%);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .5);
+}
+.video iframe, .video video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video__ph {
+  position: absolute; inset: 0;
+  display: grid; place-items: center; align-content: center; gap: 12px;
+  text-align: center; padding: 16px;
+}
+.video__tag {
+  font-family: var(--display); font-weight: 800; font-size: .7rem;
+  letter-spacing: .16em; text-transform: uppercase;
+  color: var(--accent);
+  border: 1px solid rgba(95, 180, 255, .5); border-radius: 999px; padding: 4px 12px;
+}
+.video__play {
+  width: clamp(58px, 11vw, 88px); aspect-ratio: 1;
+  border-radius: 50%; border: 0; cursor: pointer;
+  background: var(--accent); color: var(--ink);
+  display: grid; place-items: center;
+  box-shadow: 0 0 0 10px rgba(95, 180, 255, .18);
+  transition: transform .15s ease;
+}
+.video__play:hover { transform: scale(1.06); }
+.video__play svg { width: 42%; height: 42%; margin-left: 8%; }
+.video__name { font-family: var(--display); font-weight: 700; font-size: clamp(.9rem, 2.2vw, 1.15rem); }
+.video__meta { color: var(--muted); font-size: .8rem; }
+.video__bar { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: rgba(255, 255, 255, .12); }
+.video__bar span { display: block; height: 100%; width: 14%; background: var(--accent); }
+.video.is-playing .video__play { background: var(--gold); }
+.video:has(.autoplay:not([hidden])) .video__ph { visibility: hidden; }
+
+.autoplay {
+  position: absolute; z-index: 2;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(78%, 340px);
+  display: grid; justify-items: center; gap: 8px;
+  padding: 18px 14px;
+  font: inherit; color: #fff; cursor: pointer;
+  background: rgba(47, 116, 214, .92);
+  border: 2px solid rgba(255, 255, 255, .85);
+  border-radius: 6px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .4);
+}
+.autoplay strong { font-family: var(--display); font-weight: 800; font-size: clamp(.95rem, 2.6vw, 1.25rem); }
+.autoplay span { font-family: var(--display); font-weight: 700; font-size: clamp(.85rem, 2.2vw, 1.05rem); }
+.autoplay svg { width: clamp(44px, 9vw, 64px); height: auto; }
+
+/* ---------- Apply: form + calendar ---------- */
+.booker { max-width: 860px; overflow: hidden; }
+.booker__steps {
+  display: flex; justify-content: center; gap: 22px;
+  font-size: .78rem; color: var(--card-muted);
+  border-bottom: 1px solid var(--line);
+  padding: 10px 16px;
+}
+.booker__steps span { display: inline-flex; align-items: center; gap: 6px; }
+.booker__steps i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+.booker__steps .on { color: var(--card-ink); font-weight: 700; }
+.booker__steps .on i { background: var(--card-ink); }
+.booker__body { display: grid; grid-template-columns: 1fr 1fr; }
+.booker__form { padding: 20px; display: grid; gap: 12px; align-content: start; border-right: 1px solid var(--line); min-width: 0; }
+.booker__form h3 { text-align: left; font-size: 1.1rem; font-weight: 800; }
+.booker__cal { position: relative; padding: 20px; min-width: 0; }
+
+.cal__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.cal__month { font-weight: 700; }
+.cal__nav { display: flex; gap: 6px; }
+.cal__nav button {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid var(--line); background: var(--card); color: var(--card-ink);
+  cursor: pointer; font-size: 1rem; line-height: 1;
+}
+.cal__nav button:disabled { opacity: .35; cursor: not-allowed; }
+.cal__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+.cal__dow { font-size: .68rem; font-weight: 700; letter-spacing: .06em; color: var(--card-muted); padding-bottom: 6px; }
+.cal__day {
+  aspect-ratio: 1; max-width: 100%;
+  border: 0; border-radius: 50%;
+  font: inherit; font-size: .88rem; font-variant-numeric: tabular-nums;
+  background: transparent; color: #b4bbcc;
+  cursor: default;
+}
+.cal__day.is-open { background: #e7eefc; color: var(--deep); font-weight: 700; cursor: pointer; }
+.cal__day.is-open:hover { background: #d3e0fa; }
+.cal__day.is-picked { background: var(--deep); color: #fff; }
+.cal__day.is-today { box-shadow: inset 0 0 0 1.5px var(--line); }
+.cal.is-locked .cal__grid, .cal.is-locked .cal__head { opacity: .45; filter: grayscale(1); pointer-events: none; }
+.cal__lock {
+  position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%);
+  width: min(86%, 260px);
+  background: var(--card); color: var(--card-ink);
+  border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: 0 8px 26px rgba(17, 26, 46, .18);
+  padding: 12px 14px; text-align: center; font-size: .85rem;
+}
+.slots { display: grid; gap: 8px; margin-top: 14px; }
+.slots__label { font-size: .82rem; font-weight: 700; }
+.slots__tz { font-size: .74rem; color: var(--card-muted); font-weight: 400; }
+.slots__list { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.slot {
+  font: inherit; font-size: .88rem; font-weight: 700;
+  padding: 9px 6px; border-radius: 8px;
+  border: 1.5px solid var(--deep); color: var(--deep); background: var(--card);
+  cursor: pointer; font-variant-numeric: tabular-nums;
+}
+.slot.is-picked { background: var(--deep); color: #fff; }
+
+/* ---------- Booked ---------- */
+.booking {
+  width: 100%; max-width: 620px;
+  display: flex; gap: 14px; align-items: center;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 14px; padding: 14px 16px;
+}
+.booking svg { flex: none; width: 34px; height: 34px; color: var(--accent); }
+.booking div { min-width: 0; }
+.booking strong { display: block; font-family: var(--display); font-size: 1rem; }
+.booking span { color: var(--muted); font-size: .88rem; }
+.faq { width: 100%; display: grid; gap: 14px; justify-items: center; }
+.faq h3 { font-size: clamp(1.2rem, 3vw, 1.7rem); font-weight: 800; }
+.faqs { width: 100%; display: grid; gap: 40px; }
+
+/* ---------- Footer ---------- */
+.foot { max-width: 720px; text-align: center; color: var(--muted); font-size: .72rem; line-height: 1.6; }
+.foot nav { display: flex; justify-content: center; gap: 14px; margin-bottom: 8px; font-size: .78rem; }
+
+/* ---------- Live join toast ---------- */
+.toast {
+  position: fixed; z-index: 20;
+  left: calc(16px + env(safe-area-inset-left, 0px));
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  width: min(360px, calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+  display: flex; gap: 12px; align-items: center;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #10306f, #0a1b40);
+  border: 1px solid rgba(95, 180, 255, .3);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .5);
+  color: var(--fg);
+  font-size: .88rem;
+  transition: opacity .35s ease, transform .35s ease;
+}
+.toast.is-out { opacity: 0; transform: translateY(14px); pointer-events: none; }
+.toast .avatar { width: 34px; height: 34px; background: var(--card); color: var(--deep); }
+.toast p { margin: 0; }
+.toast small { color: var(--muted); }
+.tick { color: #4ade80; font-weight: 700; }
+
+@media (max-width: 760px) {
+  .booker__body { grid-template-columns: 1fr; }
+  .booker__form { border-right: 0; border-bottom: 1px solid var(--line); }
+  .cal__day { font-size: .82rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- =====================================================================
+     PAGE 1 — OPT-IN  (#optin, default)
+     ===================================================================== -->
+<main class="view" id="view-optin" data-view="optin">
+  <div class="wrap wrap--narrow">
+    <div class="logo" data-fill="brand">Your Brand</div>
+
+    <h1 class="headline">
+      Discover My <span class="hl">[Signature] Strategy</span> That <span class="hl">Beginners</span> Are Using To Get
+      <span class="hl">[$X] Payouts In Under [X] Weeks</span>
+    </h1>
+
+    <div class="scarcity" aria-label="Spots remaining">
+      <div class="scarcity__row">
+        <span class="pill">Limited free access</span>
+        <span class="spots"><span data-fill="spotsLeft">3</span> Spots Left</span>
+      </div>
+      <div class="meter"><span id="meter"></span></div>
+      <small><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>Spots moving fast…</small>
+    </div>
+
+    <form class="card optin" id="optin-form" novalidate>
+      <h2>Join The Free Discord
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M12 6v10m0 0-4-4m4 4 4-4" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </h2>
+      <div class="field">
+        <input class="input" id="o-name" name="name" autocomplete="name" placeholder="Full Name*" aria-label="Full name" required>
+      </div>
+      <div class="field">
+        <div class="phone">
+          <select class="select" id="o-cc" name="cc" aria-label="Country code">
+            <option value="+1">🇺🇸 +1</option>
+            <option value="+1">🇨🇦 +1</option>
+            <option value="+44">🇬🇧 +44</option>
+            <option value="+61">🇦🇺 +61</option>
+            <option value="+49">🇩🇪 +49</option>
+            <option value="+971">🇦🇪 +971</option>
+          </select>
+          <input class="input" id="o-phone" name="phone" type="tel" autocomplete="tel-national" placeholder="Phone*" aria-label="Phone" required>
+        </div>
+      </div>
+      <div class="field">
+        <input class="input" id="o-email" name="email" type="email" autocomplete="email" placeholder="Email*" aria-label="Email" required>
+      </div>
+      <p class="error" id="optin-error" role="alert" hidden></p>
+      <button class="btn-gold" type="submit" id="optin-submit">Submit For Discord Access</button>
+      <div class="legal"><a href="#privacy">Privacy Policy</a> | <a href="#terms">Terms of Service</a></div>
+    </form>
+
+    <!-- Social proof: swap each .shot for a real member screenshot (<img src="...">) -->
+    <section class="proof" aria-label="Member results">
+      <article class="dc">
+        <div class="dc__head"><span class="avatar" style="--av:#e67e22">M1</span><div><span class="dc__name">Member Name</span><span class="dc__time">Yesterday at 2:03 PM</span></div></div>
+        <p>[Member's message about their payout goes here]</p>
+        <div class="shot" style="--h:190px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Payout screenshot placeholder</div></div>
+        <div class="reacts"><span>🔥 12</span><span>🙏 4</span></div>
+      </article>
+      <article class="dc">
+        <div class="dc__head"><span class="avatar" style="--av:#3ba55c">M2</span><div><span class="dc__name">Member Name</span><span class="dc__time">Today at 9:26 AM</span></div></div>
+        <p>[First payout message] Thank you <span class="mention">@Coach</span></p>
+        <div class="shot" style="--h:150px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Payout email screenshot placeholder</div></div>
+        <div class="reacts"><span>🔥 19</span><span>💯 7</span></div>
+      </article>
+      <article class="dc">
+        <div class="dc__head"><span class="avatar" style="--av:#5865f2">M3</span><div><span class="dc__name">Member Name</span><span class="dc__time">Today at 11:48 AM</span></div></div>
+        <p>[Member's message about their result goes here]</p>
+        <div class="shot" style="--h:220px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Payment received screenshot placeholder</div></div>
+        <div class="reacts"><span>🔥 7</span><span>👏 11</span></div>
+      </article>
+      <article class="dc">
+        <div class="dc__head"><span class="avatar" style="--av:#eb459e">M4</span><div><span class="dc__name">Member Name</span><span class="dc__time">Monday at 6:12 PM</span></div></div>
+        <p>[Member's message about passing an evaluation] Thanks again <span class="mention">@Coach</span></p>
+        <div class="shot" style="--h:130px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Discord chat screenshot placeholder</div></div>
+      </article>
+      <article class="dc">
+        <div class="dc__head"><span class="avatar" style="--av:#faa61a">M5</span><div><span class="dc__name">Member Name</span><span class="dc__time">Sunday at 8:40 PM</span></div></div>
+        <p>[Member's message about scaling their accounts]</p>
+        <div class="shot" style="--h:200px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Payout dashboard screenshot placeholder</div></div>
+        <div class="reacts"><span>🔥 9</span></div>
+      </article>
+      <article class="dc">
+        <div class="dc__head"><span class="avatar" style="--av:#1abc9c">M6</span><div><span class="dc__name">Member Name</span><span class="dc__time">Last week</span></div></div>
+        <p>[Member's message] couldn't have done this without <span class="mention">@Coach</span></p>
+        <div class="shot" style="--h:160px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Testimonial screenshot placeholder</div></div>
+        <div class="reacts"><span>🙏 14</span></div>
+      </article>
+    </section>
+
+    <button class="btn-gold" type="button" id="back-to-form" style="max-width:560px">Join The Free Discord</button>
+
+    <footer class="foot">
+      <nav><a href="#privacy">Privacy Policy</a><a href="#terms">Terms of Service</a><a href="#disclaimer">Disclaimer</a></nav>
+      [Risk disclaimer placeholder] Trading futures and forex involves substantial risk of loss and is not suitable for every investor.
+      Results shown are not typical and past performance does not guarantee future results.
+    </footer>
+  </div>
+</main>
+
+<!-- =====================================================================
+     PAGE 2 — THANK YOU + VSL + APPLICATION  (#apply)
+     ===================================================================== -->
+<main class="view" id="view-apply" data-view="apply" hidden>
+  <div class="wrap">
+    <div class="logo" data-fill="brand">Your Brand</div>
+
+    <h1 class="sub">Check Your <span class="hl">Email</span> + <span class="hl">SMS</span> For Discord Access…</h1>
+    <h2 class="sub">Do You Want To <span class="hl">Break Free</span> From <span class="hl">Strategy Hopping</span> &amp; <span class="hl">Emotional Trading?</span></h2>
+    <h2 class="step"><b>Step #1</b> Watch This Video To <b>Stop</b> The Cycle Once And For All.</h2>
+
+    <div class="video" data-video="vsl">
+      <div class="video__ph">
+        <span class="video__tag">Video placeholder</span>
+        <button class="video__play" type="button" aria-label="Play main VSL"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg></button>
+        <span class="video__name">Main VSL</span>
+        <span class="video__meta">Swap in your video embed · ~10–20 min</span>
+      </div>
+      <div class="video__bar"><span></span></div>
+    </div>
+
+    <h2 class="step"><b>Step #2</b> Fill Out This Application To Apply For The 1-1 <span data-fill="program">Your Program</span> Mentorship</h2>
+
+    <section class="card booker" aria-label="Strategy call application">
+      <div class="booker__steps">
+        <span class="on" id="st-form"><i></i>Fill out the form</span>
+        <span id="st-book"><i></i>Book your event</span>
+      </div>
+      <div class="booker__body">
+        <form class="booker__form" id="apply-form" novalidate>
+          <h3><span data-fill="brand">Your Brand</span> Strategy Call</h3>
+          <div class="field">
+            <label for="a-phone">Phone <span class="req">*</span></label>
+            <input class="input" id="a-phone" name="phone" type="tel" autocomplete="tel" placeholder="+1 (201) 555-0123" required>
+          </div>
+          <div class="field">
+            <label for="a-name">Full Name <span class="req">*</span></label>
+            <input class="input" id="a-name" name="name" autocomplete="name" placeholder="Full name" required>
+          </div>
+          <div class="field">
+            <label for="a-email">Email Address <span class="req">*</span></label>
+            <input class="input" id="a-email" name="email" type="email" autocomplete="email" placeholder="you@email.com" required>
+          </div>
+          <div class="field">
+            <label for="a-ig">What's your Instagram? <span class="req">*</span></label>
+            <input class="input" id="a-ig" name="instagram" placeholder="@handle" required>
+          </div>
+          <div class="field">
+            <label for="a-exp">What Is Your Experience As a Trader? <span class="req">*</span></label>
+            <select class="select" id="a-exp" name="experience" required>
+              <option value="">Select</option>
+              <option>Brand new (under 6 months)</option>
+              <option>6 – 12 months</option>
+              <option>1 – 3 years</option>
+              <option>3+ years</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="a-reason">What Is The Main Reason You Want To Fix Your Trading? <span class="req">*</span></label>
+            <select class="select" id="a-reason" name="reason" required>
+              <option value="">Select</option>
+              <option>I keep switching strategies</option>
+              <option>I trade emotionally / revenge trade</option>
+              <option>I keep failing prop firm evaluations</option>
+              <option>I pass but can't get to a payout</option>
+              <option>I want to replace my income</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="a-invest">How much have you saved to invest in yourself, funded accounts, and your trading journey? <span class="req">*</span></label>
+            <select class="select" id="a-invest" name="investment" required>
+              <option value="">Select</option>
+              <option>Under $500</option>
+              <option>$500 – $1,500</option>
+              <option>$1,500 – $3,000</option>
+              <option>$3,000 – $5,000</option>
+              <option>$5,000+</option>
+            </select>
+          </div>
+        </form>
+
+        <div class="booker__cal">
+          <div class="cal is-locked" id="cal">
+            <div class="cal__head">
+              <span class="cal__month" id="cal-month">October 2026</span>
+              <div class="cal__nav">
+                <button type="button" id="cal-prev" aria-label="Previous month">‹</button>
+                <button type="button" id="cal-next" aria-label="Next month">›</button>
+              </div>
+            </div>
+            <div class="cal__grid" id="cal-grid" role="grid" aria-label="Choose a day"></div>
+            <div class="cal__lock" id="cal-lock">Please fill out the form before choosing your time slot.</div>
+          </div>
+          <div class="slots" id="slots" hidden>
+            <div class="slots__label"><span id="slots-day">Thursday, Oct 22</span> <span class="slots__tz" id="slots-tz"></span></div>
+            <div class="slots__list" id="slots-list"></div>
+            <button class="btn-gold" type="button" id="book-btn" disabled>Confirm Booking</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <nav><a href="#privacy">Privacy Policy</a><a href="#terms">Terms of Service</a><a href="#disclaimer">Disclaimer</a></nav>
+      [Risk disclaimer placeholder] Trading involves substantial risk of loss. Results shown are not typical.
+    </footer>
+  </div>
+</main>
+
+<!-- =====================================================================
+     PAGE 3 — POST-BOOKING  (#booked)
+     ===================================================================== -->
+<main class="view" id="view-booked" data-view="booked" hidden>
+  <div class="wrap">
+    <div class="logo" data-fill="brand">Your Brand</div>
+
+    <h1 class="warn">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 1 21h22L12 2z"/><path d="M12 9v5m0 3v.5" stroke="#04060c" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <span>Wait your call is <u>not</u> confirmed yet…</span>
+    </h1>
+
+    <div class="booking" id="booking">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+      <div>
+        <strong id="booking-when">Your call: [day] at [time]</strong>
+        <span id="booking-who"><span data-fill="brand">Your Brand</span> Strategy Call · a calendar invite is on its way</span>
+      </div>
+    </div>
+
+    <h2 class="step"><b>Step #1:</b> Watch This 2 Minute Video For Next Steps</h2>
+
+    <div class="video" data-video="nextSteps">
+      <div class="video__ph">
+        <span class="video__tag">Video placeholder</span>
+        <span class="video__name">Post-booking video · lays out pre-call steps</span>
+        <span class="video__meta">Swap in your video embed · ~2 min</span>
+      </div>
+      <button class="autoplay" type="button" id="unmute">
+        <strong>Your video has already started</strong>
+        <svg viewBox="0 0 64 48" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18h10l14-11v34L16 30H6z" fill="currentColor"/><path d="M40 16c3 3 3 13 0 16M47 10c6 6 6 22 0 28"/><path d="M4 4l56 40"/></svg>
+        <span>Click to listen</span>
+      </button>
+      <div class="video__bar"><span></span></div>
+    </div>
+
+    <h2 class="step"><b>Step #2:</b> Go Through Our FAQs</h2>
+
+    <div class="faqs">
+      <section class="faq">
+        <h3>What's Inside <span data-fill="program">Your Program</span>?</h3>
+        <div class="video" data-video="faqInside">
+          <div class="video__ph">
+            <span class="video__tag">Video placeholder</span>
+            <button class="video__play" type="button" aria-label="Play FAQ video"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg></button>
+            <span class="video__name">FAQ · What's inside the program</span>
+          </div>
+        </div>
+      </section>
+      <section class="faq">
+        <h3>Is <span data-fill="brand">Your Brand</span> Legit?</h3>
+        <div class="video" data-video="faqLegit">
+          <div class="video__ph">
+            <span class="video__tag">Video placeholder</span>
+            <button class="video__play" type="button" aria-label="Play FAQ video"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg></button>
+            <span class="video__name">FAQ · Proof &amp; legitimacy</span>
+          </div>
+        </div>
+      </section>
+      <section class="faq">
+        <h3>Who Is This For (And Who Is It Not For)?</h3>
+        <div class="video" data-video="faqWho">
+          <div class="video__ph">
+            <span class="video__tag">Video placeholder</span>
+            <button class="video__play" type="button" aria-label="Play FAQ video"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg></button>
+            <span class="video__name">FAQ · Who it's for</span>
+          </div>
+        </div>
+      </section>
+      <section class="faq">
+        <h3>How Much Time Do I Need Each Day?</h3>
+        <div class="video" data-video="faqTime">
+          <div class="video__ph">
+            <span class="video__tag">Video placeholder</span>
+            <button class="video__play" type="button" aria-label="Play FAQ video"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg></button>
+            <span class="video__name">FAQ · Time commitment</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer class="foot">
+      <nav><a href="#privacy">Privacy Policy</a><a href="#terms">Terms of Service</a><a href="#disclaimer">Disclaimer</a></nav>
+      [Risk disclaimer placeholder] Trading involves substantial risk of loss. Results shown are not typical.
+    </footer>
+  </div>
+</main>
+
+<!-- Live "just joined" toast (opt-in page only) -->
+<div class="toast is-out" id="toast" role="status" aria-live="polite">
+  <span class="avatar" id="toast-av">E</span>
+  <div>
+    <p><span class="tick">✓ Verified</span> · <b id="toast-name">Name</b> from <span id="toast-city">City</span> just joined the <b>free Discord</b></p>
+    <small>Just now</small>
+  </div>
+</div>
+
+<script>
+/* =======================================================================
+   EDIT ME — everything you'd normally swap lives here.
+   ======================================================================= */
+const CONFIG = {
+  brand: "Your Brand",
+  program: "Your Program",
+  spotsLeft: 3,
+  spotsFill: 88,               // % of the scarcity bar that's filled
+
+  // Paste an embed URL to replace a placeholder (YouTube/Vimeo/Wistia embed link or an .mp4).
+  videos: {
+    vsl: "",
+    nextSteps: "",
+    faqInside: "",
+    faqLegit: "",
+    faqWho: "",
+    faqTime: ""
+  },
+
+  // Call slots offered on each open weekday (24h "HH:MM", in the visitor's own timezone).
+  slotTimes: ["10:00", "11:30", "13:00", "14:30", "16:00", "18:00"],
+  bookAheadDays: 21,
+
+  // "Just joined" toast. PLACEHOLDER DATA — feed this from real opt-ins (your CRM / Discord bot)
+  // before going live; showing made-up sign-ups is deceptive and can break FTC/ad-platform rules.
+  // Set to [] to turn the toast off.
+  recentJoins: [
+    { name: "Elijah", city: "Phoenix" },
+    { name: "Marcus", city: "Atlanta" },
+    { name: "Daniel", city: "Toronto" },
+    { name: "Chris",  city: "Houston" },
+    { name: "Ryan",   city: "London" }
+  ]
+};
+
+/* ======================================================================= */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const store = {
+  get(k) { try { return JSON.parse(sessionStorage.getItem(k)); } catch { return null; } },
+  set(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+
+// Fill brand / program / spots text
+$$("[data-fill]").forEach(el => { if (CONFIG[el.dataset.fill] != null) el.textContent = CONFIG[el.dataset.fill]; });
+$("#meter").style.setProperty("--fill", CONFIG.spotsFill + "%");
+
+// Swap placeholders for real embeds when a URL is configured
+$$(".video[data-video]").forEach(box => {
+  const url = CONFIG.videos[box.dataset.video];
+  if (!url) return;
+  box.innerHTML = /\.(mp4|webm|m3u8)(\?|$)/i.test(url)
+    ? `<video src="${url}" controls playsinline></video>`
+    : `<iframe src="${url}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+});
+$$(".video__play").forEach(btn => btn.addEventListener("click", () => btn.closest(".video").classList.toggle("is-playing")));
+$("#unmute")?.addEventListener("click", e => { e.currentTarget.hidden = true; });
+
+/* ---------- Routing: #optin (default) → #apply → #booked ---------- */
+function route() {
+  const name = (location.hash || "").slice(1);
+  if (name && !["optin", "apply", "booked"].includes(name)) return;   // #privacy etc. leave the page as is
+  const view = name || "optin";
+  $$("[data-view]").forEach(v => { v.hidden = v.dataset.view !== view; });
+  if (view === "apply") prefillApply();
+  if (view === "booked") showBooking();
+  toast.active(view === "optin");
+  window.scrollTo(0, 0);
+}
+function go(view) { if (location.hash === "#" + view) route(); else location.hash = view; }
+
+/* ---------- Lead data (opt-in → application prefill) ---------- */
+let lead = store.get("lead") || {};
+const qs = new URLSearchParams(location.search);   // UTM-style prefill: ?name=&email=&phone=
+["name", "email", "phone"].forEach(k => { const v = qs.get(k) || (k === "name" && qs.get("first_name")); if (v) lead[k] = v; });
+
+function prefillApply() {
+  [["a-name", "name"], ["a-email", "email"], ["a-phone", "phone"]].forEach(([id, k]) => {
+    const el = document.getElementById(id);
+    if (lead[k] && !el.value) el.value = lead[k];
+  });
+  checkApply();
+}
+
+/* ---------- Opt-in form ---------- */
+const emailOk = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+$("#optin-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const f = e.currentTarget;
+  const name = f.name.value.trim(), phone = f.phone.value.trim(), email = f.email.value.trim();
+  const bad = [];
+  f.name.setAttribute("aria-invalid", !name); if (!name) bad.push("your name");
+  f.phone.setAttribute("aria-invalid", phone.replace(/\D/g, "").length < 7); if (phone.replace(/\D/g, "").length < 7) bad.push("a phone number");
+  f.email.setAttribute("aria-invalid", !emailOk(email)); if (!emailOk(email)) bad.push("a valid email");
+  const err = $("#optin-error");
+  if (bad.length) { err.textContent = "Please add " + bad.join(", ") + "."; err.hidden = false; return; }
+  err.hidden = true;
+  lead = { name, email, phone: f.cc.value + " " + phone };
+  store.set("lead", lead);
+  // TODO: POST `lead` to your CRM / webhook here (GoHighLevel, Zapier, etc.)
+  go("apply");
+});
+$("#back-to-form").addEventListener("click", () => { $("#optin-form").scrollIntoView({ behavior: "smooth", block: "center" }); $("#o-name").focus({ preventScroll: true }); });
+
+/* ---------- Application form gates the calendar ---------- */
+const applyForm = $("#apply-form");
+function checkApply() {
+  const ok = $$("[required]", applyForm).every(el => el.value.trim() && (el.type !== "email" || emailOk(el.value.trim())));
+  $("#cal").classList.toggle("is-locked", !ok);
+  $("#cal-lock").hidden = ok;
+  $("#st-form").classList.toggle("on", !ok);
+  $("#st-book").classList.toggle("on", ok);
+  if (!ok) { $("#slots").hidden = true; picked = { day: null, time: null }; renderCal(); }
+  return ok;
+}
+applyForm.addEventListener("input", checkApply);
+applyForm.addEventListener("change", checkApply);
+
+/* ---------- Calendar ---------- */
+const today = new Date(); today.setHours(0, 0, 0, 0);
+const lastDay = new Date(today); lastDay.setDate(lastDay.getDate() + CONFIG.bookAheadDays);
+let viewMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+let picked = { day: null, time: null };
+const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+$("#slots-tz").textContent = tz ? "(" + tz.replace(/_/g, " ") + ")" : "";
+
+const isOpen = d => d > today && d <= lastDay && d.getDay() !== 0 && d.getDay() !== 6;
+function renderCal() {
+  const grid = $("#cal-grid");
+  $("#cal-month").textContent = viewMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  $("#cal-prev").disabled = viewMonth <= new Date(today.getFullYear(), today.getMonth(), 1);
+  $("#cal-next").disabled = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1) > lastDay;
+  const cells = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map(d => `<div class="cal__dow">${d}</div>`);
+  const first = viewMonth.getDay();
+  for (let i = 0; i < first; i++) cells.push("<div></div>");
+  const days = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 0).getDate();
+  for (let n = 1; n <= days; n++) {
+    const d = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), n);
+    const cls = ["cal__day", isOpen(d) && "is-open", +d === +today && "is-today", picked.day && +d === +picked.day && "is-picked"].filter(Boolean).join(" ");
+    cells.push(`<button type="button" class="${cls}" data-ts="${+d}" ${isOpen(d) ? "" : "disabled"} aria-label="${d.toDateString()}">${n}</button>`);
+  }
+  grid.innerHTML = cells.join("");
+}
+$("#cal-grid").addEventListener("click", e => {
+  const b = e.target.closest(".cal__day.is-open"); if (!b) return;
+  picked = { day: new Date(+b.dataset.ts), time: null };
+  renderCal(); renderSlots();
+});
+$("#cal-prev").addEventListener("click", () => { viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1); renderCal(); });
+$("#cal-next").addEventListener("click", () => { viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1); renderCal(); });
+
+const fmtTime = hm => { const [h, m] = hm.split(":").map(Number); return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }); };
+const fmtDay = d => d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+function renderSlots() {
+  $("#slots").hidden = false;
+  $("#slots-day").textContent = fmtDay(picked.day);
+  $("#slots-list").innerHTML = CONFIG.slotTimes.map(t => `<button type="button" class="slot${picked.time === t ? " is-picked" : ""}" data-t="${t}">${fmtTime(t)}</button>`).join("");
+  const btn = $("#book-btn");
+  btn.disabled = !picked.time;
+  btn.textContent = picked.time ? `Confirm ${fmtDay(picked.day).split(",")[0]} at ${fmtTime(picked.time)}` : "Pick a time";
+}
+$("#slots-list").addEventListener("click", e => {
+  const b = e.target.closest(".slot"); if (!b) return;
+  picked.time = b.dataset.t; renderSlots();
+});
+$("#book-btn").addEventListener("click", () => {
+  if (!checkApply() || !picked.day || !picked.time) return;
+  const data = Object.fromEntries(new FormData(applyForm));
+  store.set("booking", { ...data, day: +picked.day, time: picked.time });
+  // TODO: send `data` + slot to your calendar / CRM here
+  go("booked");
+});
+
+function showBooking() {
+  const b = store.get("booking");
+  if (!b) return;
+  $("#booking-when").textContent = `Your call: ${fmtDay(new Date(b.day))} at ${fmtTime(b.time)}`;
+}
+
+/* ---------- "Just joined" toast ---------- */
+const toast = (() => {
+  const el = $("#toast"), list = CONFIG.recentJoins;
+  let i = 0, timer = null;
+  function show() {
+    const p = list[i++ % list.length];
+    $("#toast-name").textContent = p.name;
+    $("#toast-city").textContent = p.city;
+    $("#toast-av").textContent = p.name[0];
+    el.classList.remove("is-out");
+    timer = setTimeout(() => { el.classList.add("is-out"); timer = setTimeout(show, 7000); }, 5000);
+  }
+  return {
+    active(on) {
+      clearTimeout(timer); el.classList.add("is-out");
+      if (on && list.length) timer = setTimeout(show, 2500);
+    }
+  };
+})();
+
+renderCal();
+window.addEventListener("hashchange", route);
+route();
+</script>
+</body>
+</html>
