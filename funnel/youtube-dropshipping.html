@@ -399,6 +399,7 @@ h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; text-al
 .msg__time { color: var(--dc-muted); font-size: .74rem; }
 .msg p { margin: 2px 0 8px; }
 .msg .shot { max-width: 380px; }
+.shot--wide { height: auto; width: 100%; max-width: 100%; aspect-ratio: 16 / 10; background-color: var(--ph); }
 .shots-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-width: 420px; }
 .daysplit {
   display: flex; align-items: center; gap: 10px;
@@ -740,93 +741,62 @@ h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; text-al
       </section>
     </div>
 
-    <h2 class="step"><b>Step #3:</b> Hear From Members Who've Done It</h2>
+    <h2 class="step"><b>Step #3:</b> See My Own Results</h2>
 
+    <!-- Coach's own results: replace each .shot with <img src="your-screenshot.png" alt=""> -->
     <div class="faqs">
       <section class="faq">
-        <h3>[Member] Got Their First Sale [X] Days After Joining</h3>
-        <div class="video video--split" data-video="testi1">
-          <span class="video__who video__who--l">Member</span>
-          <span class="video__who video__who--r">Coach</span>
-          <div class="video__ph">
-            <span class="video__tag">Video placeholder</span>
-            <button class="video__play" type="button" aria-label="Play testimonial video"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg></button>
-            <span class="video__name">Testimonial interview #1</span>
-          </div>
-        </div>
+        <h3>I Got 18 Million Views On YouTube Shorts…</h3>
+        <div class="shot shot--wide"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>YouTube Studio screenshot · 18M views</div></div>
       </section>
       <section class="faq">
-        <h3>How [Member] Quit Their Warehouse Job After [Result]</h3>
-        <div class="video video--split" data-video="testi2">
-          <span class="video__who video__who--l">Member</span>
-          <span class="video__who video__who--r">Coach</span>
-          <div class="video__ph">
-            <span class="video__tag">Video placeholder</span>
-            <button class="video__play" type="button" aria-label="Play testimonial video"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg></button>
-            <span class="video__name">Testimonial interview #2</span>
-          </div>
-        </div>
+        <h3>…And Made Just $87 In Sales</h3>
+        <div class="shot shot--wide"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Shopify dashboard screenshot · $87</div></div>
       </section>
       <section class="faq">
-        <h3>[Member] Went From [X] Views And $0 To [X] Orders From One Short</h3>
-        <div class="video video--split" data-video="testi3">
-          <span class="video__who video__who--l">Member</span>
-          <span class="video__who video__who--r">Coach</span>
-          <div class="video__ph">
-            <span class="video__tag">Video placeholder</span>
-            <button class="video__play" type="button" aria-label="Play testimonial video"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg></button>
-            <span class="video__name">Testimonial interview #3</span>
-          </div>
-        </div>
+        <h3>Then I Fixed One Thing And Hit My First $10k Month</h3>
+        <div class="shot shot--wide"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Shopify dashboard screenshot · first $10k month</div></div>
       </section>
     </div>
 
     <h3 class="more">There's More…</h3>
 
-    <!-- Screenshot wall: replace each .shot with <img src="your-screenshot.png" alt=""> -->
-    <section class="feed" aria-label="Member wins from the Discord">
+    <section class="feed" aria-label="Coach's results posted in the Discord">
       <div class="msg">
-        <span class="avatar" style="--av:#e67e22">M1</span>
+        <span class="avatar" style="--av:#5865f2">C</span>
         <div class="msg__body">
-          <div class="msg__head"><span class="msg__name">Member Name</span><span class="role">Member</span><span class="msg__time">2:34 PM</span></div>
-          <p>[First sale message]</p>
-          <div class="shot" style="--h:280px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Shopify first sale notification placeholder</div></div>
-          <div class="reacts"><span>🔥 5</span></div>
+          <div class="msg__head"><span class="msg__name" data-fill="coach">[Coach]</span><span class="role">Coach</span><span class="msg__time">2:34 PM</span></div>
+          <p>[Post about a Short that just went viral]</p>
+          <div class="shot" style="--h:260px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>YouTube Studio realtime views screenshot</div></div>
+          <div class="reacts"><span>🔥 24</span><span>👀 9</span></div>
         </div>
       </div>
       <div class="msg">
         <span class="avatar" style="--av:#5865f2">C</span>
         <div class="msg__body">
-          <div class="msg__head"><span class="msg__name">Coach</span><span class="role">Coach</span><span class="msg__time">3:23 PM</span></div>
-          <p>[Coach reply]</p>
+          <div class="msg__head"><span class="msg__name" data-fill="coach">[Coach]</span><span class="role">Coach</span><span class="msg__time">6:12 PM</span></div>
+          <p>[Post about the orders that Short brought in]</p>
+          <div class="shot" style="--h:210px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Shopify orders screenshot</div></div>
+          <div class="reacts"><span>🔥 18</span></div>
         </div>
       </div>
       <div class="daysplit">[Date]</div>
       <div class="msg">
-        <span class="avatar" style="--av:#3ba55c">M2</span>
+        <span class="avatar" style="--av:#5865f2">C</span>
         <div class="msg__body">
-          <div class="msg__head"><span class="msg__name">Member Name</span><span class="role">Member</span><span class="msg__time">Yesterday at 6:01 PM</span></div>
-          <p>[Message about how long they've been posting Shorts]</p>
-          <div class="shots-2"><div class="shot" style="--h:210px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>YouTube Shorts analytics placeholder</div></div><div class="shot" style="--h:210px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Shopify orders placeholder</div></div></div>
-          <div class="reacts"><span>🔥 10</span></div>
+          <div class="msg__head"><span class="msg__name" data-fill="coach">[Coach]</span><span class="role">Coach</span><span class="msg__time">Yesterday at 9:40 PM</span></div>
+          <p>[Post about this month's numbers]</p>
+          <div class="shots-2"><div class="shot" style="--h:200px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Shopify sales screenshot</div></div><div class="shot" style="--h:200px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>YouTube Shorts analytics screenshot</div></div></div>
+          <div class="reacts"><span>🔥 31</span><span>💯 12</span></div>
         </div>
       </div>
       <div class="msg">
-        <span class="avatar" style="--av:#eb459e">M3</span>
+        <span class="avatar" style="--av:#5865f2">C</span>
         <div class="msg__body">
-          <div class="msg__head"><span class="msg__name">Member Name</span><span class="role">Member</span><span class="msg__time">Today at 9:12 AM</span></div>
-          <p>[Message about their sales this month]</p>
-          <div class="shot" style="--h:190px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Shopify dashboard screenshot placeholder</div></div>
-          <div class="reacts"><span>🔥 9</span><span>💯 3</span></div>
-        </div>
-      </div>
-      <div class="msg">
-        <span class="avatar" style="--av:#faa61a">M4</span>
-        <div class="msg__body">
-          <div class="msg__head"><span class="msg__name">Member Name</span><span class="role">Member</span><span class="msg__time">Today at 1:47 PM</span></div>
-          <p>[Message about finding their winning product]</p>
-          <div class="shot" style="--h:170px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Product review chat screenshot placeholder</div></div>
-          <div class="reacts"><span>👏 6</span></div>
+          <div class="msg__head"><span class="msg__name" data-fill="coach">[Coach]</span><span class="role">Coach</span><span class="msg__time">Today at 11:05 AM</span></div>
+          <p>[Post about a new product test]</p>
+          <div class="shot" style="--h:180px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Product test results screenshot</div></div>
+          <div class="reacts"><span>👀 14</span></div>
         </div>
       </div>
     </section>
@@ -866,10 +836,7 @@ const CONFIG = {
     faqLegit: "",
     faqWho: "",
     faqTime: "",
-    faqLate: "",
-    testi1: "",
-    testi2: "",
-    testi3: ""
+    faqLate: ""
   },
 
   // Call slots offered on each open weekday (24h "HH:MM", in the visitor's own timezone).
