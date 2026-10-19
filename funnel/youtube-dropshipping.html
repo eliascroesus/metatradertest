@@ -227,6 +227,22 @@ h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; text-al
   font-variant-numeric: tabular-nums;
 }
 
+/* ---------- Results gallery ---------- */
+.receipts { width: 100%; display: grid; gap: 18px; justify-items: center; }
+.receipts__grid { width: 100%; columns: 2 280px; column-gap: 14px; }
+.receipt {
+  break-inside: avoid;
+  margin: 0 0 14px;
+  background: #0b1226;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .4);
+}
+.receipt img, .receipt video { display: block; width: 100%; max-width: 100%; height: auto; }
+.receipt figcaption { padding: 10px 14px; font-family: var(--display); font-weight: 700; font-size: .95rem; }
+.receipt figcaption b { color: var(--accent); font-weight: 800; }
+
 /* ---------- Video placeholder ---------- */
 .video {
   position: relative;
@@ -496,43 +512,20 @@ h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; text-al
       <div class="legal"><a href="#privacy">Privacy Policy</a> | <a href="#terms">Terms of Service</a></div>
     </form>
 
-    <!-- Social proof: swap each .shot for a real member screenshot (<img src="...">) -->
-    <section class="proof" aria-label="Member results">
-      <article class="dc">
-        <div class="dc__head"><span class="avatar" style="--av:#e67e22">M1</span><div><span class="dc__name">Member Name</span><span class="dc__time">Yesterday at 2:03 PM</span></div></div>
-        <p>[Member's message about their first sale goes here]</p>
-        <div class="shot" style="--h:190px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>First Shopify sale notification placeholder</div></div>
-        <div class="reacts"><span>🔥 12</span><span>🙏 4</span></div>
-      </article>
-      <article class="dc">
-        <div class="dc__head"><span class="avatar" style="--av:#3ba55c">M2</span><div><span class="dc__name">Member Name</span><span class="dc__time">Today at 9:26 AM</span></div></div>
-        <p>[First sale from a Short] Thank you <span class="mention">@Coach</span></p>
-        <div class="shot" style="--h:150px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>YouTube Shorts analytics placeholder</div></div>
-        <div class="reacts"><span>🔥 19</span><span>💯 7</span></div>
-      </article>
-      <article class="dc">
-        <div class="dc__head"><span class="avatar" style="--av:#5865f2">M3</span><div><span class="dc__name">Member Name</span><span class="dc__time">Today at 11:48 AM</span></div></div>
-        <p>[Message about a Short that went viral and the orders it brought]</p>
-        <div class="shot" style="--h:220px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Shopify orders screenshot placeholder</div></div>
-        <div class="reacts"><span>🔥 7</span><span>👏 11</span></div>
-      </article>
-      <article class="dc">
-        <div class="dc__head"><span class="avatar" style="--av:#eb459e">M4</span><div><span class="dc__name">Member Name</span><span class="dc__time">Monday at 6:12 PM</span></div></div>
-        <p>[Message about finding a product that sells after the weekly review] Thanks again <span class="mention">@Coach</span></p>
-        <div class="shot" style="--h:130px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Product review chat screenshot placeholder</div></div>
-      </article>
-      <article class="dc">
-        <div class="dc__head"><span class="avatar" style="--av:#faa61a">M5</span><div><span class="dc__name">Member Name</span><span class="dc__time">Sunday at 8:40 PM</span></div></div>
-        <p>[Message about quitting their warehouse job / 9‑5]</p>
-        <div class="shot" style="--h:200px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Shopify dashboard screenshot placeholder</div></div>
-        <div class="reacts"><span>🔥 9</span></div>
-      </article>
-      <article class="dc">
-        <div class="dc__head"><span class="avatar" style="--av:#1abc9c">M6</span><div><span class="dc__name">Member Name</span><span class="dc__time">Last week</span></div></div>
-        <p>[Member's message] couldn't have done this without <span class="mention">@Coach</span></p>
-        <div class="shot" style="--h:160px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Testimonial screenshot placeholder</div></div>
-        <div class="reacts"><span>🙏 14</span></div>
-      </article>
+    <!-- Proof: the coach's own results. Files live in assets/ricky/ -->
+    <section class="receipts" aria-label="My results">
+      <h2 class="sub">Don't Believe Me? <span class="hl">Here Are The Receipts.</span></h2>
+      <div class="receipts__grid">
+        <figure class="receipt"><img src="assets/ricky/sales-4-days.png" alt="Shopify dashboard showing $11,249 in total sales and 106 orders from Sep 10 to Sep 13"><figcaption><b>$11,249</b> in 4 days</figcaption></figure>
+        <figure class="receipt"><img src="assets/ricky/views-48-hours.png" alt="YouTube Studio realtime showing 11,678,367 views in the last 48 hours"><figcaption><b>11.6M views</b> in 48 hours</figcaption></figure>
+        <figure class="receipt"><video src="assets/ricky/subscribers.mp4" poster="assets/ricky/subscribers-poster.jpg" autoplay muted loop playsinline aria-label="Live subscriber count at 719,151"></video><figcaption><b>719K</b> subscribers</figcaption></figure>
+        <figure class="receipt"><img src="assets/ricky/sales-30-days-phone.jpg" alt="Shopify app showing $36,805.91 in sales over the last 30 days"><figcaption><b>$36,805</b> in 30 days</figcaption></figure>
+        <figure class="receipt"><img src="assets/ricky/orders-to-ship.jpg" alt="Stacks of packed orders and shipping labels ready to go out"><figcaption>Orders stacked up to ship</figcaption></figure>
+        <figure class="receipt"><img src="assets/ricky/sales-30-days-laptop.jpg" alt="Shopify gross sales report showing $28,436.84 over 30 days"><figcaption><b>$28,436</b> in 30 days</figcaption></figure>
+        <figure class="receipt"><img src="assets/ricky/play-buttons.jpg" alt="YouTube Silver Play Buttons on a table"><figcaption><b>YouTube Play Buttons</b></figcaption></figure>
+        <figure class="receipt"><img src="assets/ricky/sales-one-day.webp" alt="Shopify app showing $2,159.76 in sales and 22 orders in one day"><figcaption><b>$2,159</b> in one day</figcaption></figure>
+        <figure class="receipt"><img src="assets/ricky/play-button-analytics.jpg" alt="YouTube Play Button held in front of channel analytics"><figcaption>Channel analytics</figcaption></figure>
+      </div>
     </section>
 
     <button class="btn-gold" type="button" id="back-to-form" style="max-width:560px">Join The Free Discord</button>
