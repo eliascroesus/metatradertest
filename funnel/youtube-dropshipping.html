@@ -737,61 +737,19 @@ h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; text-al
 
     <h2 class="step"><b>Step #3:</b> See My Own Results</h2>
 
-    <!-- Coach's own results: replace each .shot with <img src="your-screenshot.png" alt=""> -->
-    <div class="faqs">
-      <section class="faq">
-        <h3>I Got 18 Million Views On YouTube Shorts…</h3>
-        <div class="shot shot--wide"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>YouTube Studio screenshot · 18M views</div></div>
-      </section>
-      <section class="faq">
-        <h3>…And Made Just $87 In Sales</h3>
-        <div class="shot shot--wide"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Shopify dashboard screenshot · $87</div></div>
-      </section>
-      <section class="faq">
-        <h3>Then I Fixed One Thing And Hit My First $10k Month</h3>
-        <div class="shot shot--wide"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Shopify dashboard screenshot · first $10k month</div></div>
-      </section>
-    </div>
-
-    <h3 class="more">There's More…</h3>
-
-    <section class="feed" aria-label="Coach's results posted in the Discord">
-      <div class="msg">
-        <span class="avatar" style="--av:#5865f2">R</span>
-        <div class="msg__body">
-          <div class="msg__head"><span class="msg__name" data-fill="coach">Ricky</span><span class="role">Coach</span><span class="msg__time">2:34 PM</span></div>
-          <p>[Post about a Short that just went viral]</p>
-          <div class="shot" style="--h:260px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>YouTube Studio realtime views screenshot</div></div>
-          <div class="reacts"><span>🔥 24</span><span>👀 9</span></div>
-        </div>
-      </div>
-      <div class="msg">
-        <span class="avatar" style="--av:#5865f2">R</span>
-        <div class="msg__body">
-          <div class="msg__head"><span class="msg__name" data-fill="coach">Ricky</span><span class="role">Coach</span><span class="msg__time">6:12 PM</span></div>
-          <p>[Post about the orders that Short brought in]</p>
-          <div class="shot" style="--h:210px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Shopify orders screenshot</div></div>
-          <div class="reacts"><span>🔥 18</span></div>
-        </div>
-      </div>
-      <div class="daysplit">[Date]</div>
-      <div class="msg">
-        <span class="avatar" style="--av:#5865f2">R</span>
-        <div class="msg__body">
-          <div class="msg__head"><span class="msg__name" data-fill="coach">Ricky</span><span class="role">Coach</span><span class="msg__time">Yesterday at 9:40 PM</span></div>
-          <p>[Post about this month's numbers]</p>
-          <div class="shots-2"><div class="shot" style="--h:200px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Shopify sales screenshot</div></div><div class="shot" style="--h:200px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>YouTube Shorts analytics screenshot</div></div></div>
-          <div class="reacts"><span>🔥 31</span><span>💯 12</span></div>
-        </div>
-      </div>
-      <div class="msg">
-        <span class="avatar" style="--av:#5865f2">R</span>
-        <div class="msg__body">
-          <div class="msg__head"><span class="msg__name" data-fill="coach">Ricky</span><span class="role">Coach</span><span class="msg__time">Today at 11:05 AM</span></div>
-          <p>[Post about a new product test]</p>
-          <div class="shot" style="--h:180px"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Product test results screenshot</div></div>
-          <div class="reacts"><span>👀 14</span></div>
-        </div>
+    <!-- Ricky's own results. Files live in assets/ricky/ -->
+    <section class="receipts" aria-label="Ricky's results">
+      <div class="receipts__grid">
+        <figure class="receipt"><img src="assets/ricky/sales-4-days.png" alt="Shopify dashboard showing $11,249 in total sales and 106 orders from Sep 10 to Sep 13"><figcaption><b>$11,249</b> in 4 days</figcaption></figure>
+        <figure class="receipt"><img src="assets/ricky/youtube-september-91m.png" alt="YouTube Studio showing 91M views and 565.7K new subscribers in September"><figcaption><b>91M views</b> in September</figcaption></figure>
+        <figure class="receipt"><img src="assets/ricky/sales-today-payout.png" alt="Shopify app showing $1,550 in sales today and a $3,525.74 payout tomorrow"><figcaption><b>$3,525</b> payout tomorrow</figcaption></figure>
+        <figure class="receipt"><video src="assets/ricky/subscribers.mp4" poster="assets/ricky/subscribers-poster.jpg" autoplay muted loop playsinline aria-label="Live subscriber count at 719,151"></video><figcaption><b>719K</b> subscribers</figcaption></figure>
+        <figure class="receipt"><img src="assets/ricky/views-48-hours.png" alt="YouTube Studio realtime showing 11,678,367 views in the last 48 hours"><figcaption><b>11.6M views</b> in 48 hours</figcaption></figure>
+        <figure class="receipt"><video src="assets/ricky/shopify-live.mp4" poster="assets/ricky/shopify-live-poster.jpg" autoplay muted loop playsinline aria-label="Shopify app on a phone showing the last 30 days of sales"></video></figure>
+        <figure class="receipt"><img src="assets/ricky/youtube-september-60m.png" alt="YouTube Studio showing 60.4M views and 137.3K new subscribers in September"><figcaption><b>60.4M views</b> in September</figcaption></figure>
+        <figure class="receipt"><img src="assets/ricky/label-roll.jpg" alt="Holding up a long roll of printed shipping labels"><figcaption>Shipping labels printed and ready</figcaption></figure>
+        <figure class="receipt"><img src="assets/ricky/sales-30-days-phone.jpg" alt="Shopify app showing sales over the last 30 days"></figure>
+        <figure class="receipt"><img src="assets/ricky/orders-to-ship.jpg" alt="Stacks of packed orders and shipping labels ready to go out"><figcaption>Orders stacked up to ship</figcaption></figure>
       </div>
     </section>
 
