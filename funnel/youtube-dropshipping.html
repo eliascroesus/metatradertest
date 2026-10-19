@@ -493,12 +493,12 @@ h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; text-al
       <div class="field">
         <div class="phone">
           <select class="select" id="o-cc" name="cc" aria-label="Country code">
-            <option value="+1">🇺🇸 +1</option>
-            <option value="+1">🇨🇦 +1</option>
-            <option value="+44">🇬🇧 +44</option>
-            <option value="+61">🇦🇺 +61</option>
-            <option value="+49">🇩🇪 +49</option>
-            <option value="+971">🇦🇪 +971</option>
+            <option value="+1" data-country="US">🇺🇸 +1</option>
+            <option value="+1" data-country="CA">🇨🇦 +1</option>
+            <option value="+44" data-country="GB">🇬🇧 +44</option>
+            <option value="+61" data-country="AU">🇦🇺 +61</option>
+            <option value="+49" data-country="DE">🇩🇪 +49</option>
+            <option value="+971" data-country="AE">🇦🇪 +971</option>
           </select>
           <input class="input" id="o-phone" name="phone" type="tel" autocomplete="tel-national" placeholder="Phone*" aria-label="Phone" required>
         </div>
@@ -775,6 +775,10 @@ h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; text-al
    EDIT ME — everything you'd normally swap lives here.
    ======================================================================= */
 const CONFIG = {
+  // Google Sheets Web app URL (ends in /exec). See funnel/google-sheets/lead-capture.gs.
+  // Every page 1 opt-in is added as a row. Leave "" to send nothing.
+  leadSheetUrl: "",
+
   brand: "Ricky",
   program: "YouTube Shorts Dropshipping",
   coach: "Ricky",
@@ -857,6 +861,26 @@ function prefillApply() {
   checkApply();
 }
 
+/* ---------- Send opt-ins to the Google Sheet ---------- */
+function sendLead(data) {
+  if (!CONFIG.leadSheetUrl) return;
+  const body = new URLSearchParams({
+    ...data,
+    funnel: document.title,
+    page_url: location.href.split("#")[0],
+    utm_source: qs.get("utm_source") || "",
+    utm_medium: qs.get("utm_medium") || "",
+    utm_campaign: qs.get("utm_campaign") || "",
+    utm_content: qs.get("utm_content") || "",
+    utm_term: qs.get("utm_term") || "",
+    referrer: document.referrer,
+    device: /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? "Mobile" : "Desktop",
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || ""
+  });
+  // Apps Script doesn't send CORS headers, so the response can't be read; "no-cors" still delivers the row.
+  fetch(CONFIG.leadSheetUrl, { method: "POST", mode: "no-cors", body, keepalive: true }).catch(() => {});
+}
+
 /* ---------- Opt-in form ---------- */
 const emailOk = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 $("#optin-form").addEventListener("submit", e => {
@@ -871,8 +895,8 @@ $("#optin-form").addEventListener("submit", e => {
   if (bad.length) { err.textContent = "Please add " + bad.join(", ") + "."; err.hidden = false; return; }
   err.hidden = true;
   lead = { name, email, phone: f.cc.value + " " + phone };
+  sendLead({ ...lead, country: f.cc.selectedOptions[0]?.dataset.country || "" });
   store.set("lead", lead);
-  // TODO: POST `lead` to your CRM / webhook here (GoHighLevel, Zapier, etc.)
   go("apply");
 });
 $("#back-to-form").addEventListener("click", () => { $("#optin-form").scrollIntoView({ behavior: "smooth", block: "center" }); $("#o-name").focus({ preventScroll: true }); });
